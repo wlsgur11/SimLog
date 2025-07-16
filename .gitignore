@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# 환경변수 및 민감 정보
+backend/.env
+.env
+
+# 가상환경
+venv/
+backend/venv/
+
+# IDE
+.idea/
+*.iml
+
+# 기타
+.DS_Store 
