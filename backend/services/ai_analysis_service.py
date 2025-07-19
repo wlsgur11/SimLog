@@ -39,8 +39,8 @@ class AIAnalysisService:
             반드시 다음 JSON 형태로만 응답해주세요. 다른 텍스트는 포함하지 마세요:
             {{
                 "primary_emotion": "감정명",
-                "intensity": 5,
-                "confidence": 0.8,
+                "intensity": 1-10 사이의 감정 강도 (1: 매우 약함, 10: 매우 강함),
+                "confidence": 0.0-1.0 사이의 분석 확신도 (0.0: 매우 불확실, 1.0: 매우 확실),
                 "reasoning": "분석 근거"
             }}
             """
