@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Boolean
+from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
 
@@ -10,4 +11,8 @@ class User(Base):
     nickname = Column(String(50), unique=True, index=True)
     social_type = Column(String(20), nullable=True)
     social_id = Column(String(100), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow) 
+    is_developer = Column(Boolean, default=False)  # 개발자 모드 플래그
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # 관계 설정
+    records = relationship("Record", back_populates="user") 
