@@ -29,8 +29,8 @@ class RecordService:
             if today_record:
                 raise ValueError("오늘 이미 감정 기록을 작성했습니다. 하루에 한 번만 가능합니다.")
         
-        # AI 키워드 추출
-        ai_keywords = RecordService._extract_keywords(content)
+        # AI 키워드 추출 (GPT-4o mini)
+        ai_keywords = AIAnalysisService.extract_keywords_with_gpt(content)
         
         # AI 요약 생성 (GPT-4o mini 우선 사용)
         ai_summary = AIAnalysisService.generate_summary_with_ai(content)

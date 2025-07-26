@@ -41,7 +41,8 @@ class AIAnalysisService:
                 "primary_emotion": "감정명",
                 "intensity": 1-10 사이의 감정 강도 (1: 매우 약함, 10: 매우 강함),
                 "confidence": 0.0-1.0 사이의 분석 확신도 (0.0: 매우 불확실, 1.0: 매우 확실),
-                "reasoning": "분석 근거"
+                "reasoning": "분석 근거",
+                "color_name": "이 감정을 나타내는 색상의 이름 (예: 선명한 빨강, 밝은 노랑, 깊은 파랑 등)"
             }}
             """
             
@@ -173,14 +174,89 @@ class AIAnalysisService:
         return AIAnalysisService.generate_summary_fallback(content)
     
     @staticmethod
+    def extract_keywords_with_gpt(content: str) -> list:
+        """GPT-4o mini를 사용한 감정 키워드 추출"""
+        try:
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key:
+                return []
+            client = OpenAI(api_key=api_key)
+            prompt = f"""
+            다음 텍스트에서 감정과 관련된 핵심 키워드 3~5개만 뽑아줘. 쉼표로 구분해서 반환해줘.
+            텍스트: {content}
+            키워드:
+            """
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3,
+                max_tokens=50
+            )
+            keywords_str = response.choices[0].message.content.strip()
+            # 쉼표로 분리하여 리스트로 변환
+            keywords = [k.strip() for k in keywords_str.split(',') if k.strip()]
+            return keywords[:5]
+        except Exception as e:
+            print(f"GPT-4o mini 키워드 추출 오류: {str(e)}")
+            return []
+    
+    @staticmethod
+    def generate_average_color_name_with_gpt(emotion_records: list) -> str:
+        """GPT-4o mini를 사용한 평균 색상 이름 생성"""
+        try:
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key:
+                return "평균 감정색"
+            
+            client = OpenAI(api_key=api_key)
+            
+            # 감정 기록 요약
+            emotions_summary = []
+            for record in emotion_records:
+                emotion = record.get('emotion_analysis', {}).get('primary_emotion', '알 수 없음')
+                color_name = record.get('emotion_analysis', {}).get('color', {}).get('name', '알 수 없음')
+                emotions_summary.append(f"{emotion}({color_name})")
+            
+            emotions_text = ", ".join(emotions_summary)
+            
+            prompt = f"""
+            다음 감정 기록들의 평균을 나타내는 색상 이름을 창의적으로 만들어주세요.
+            
+            감정 기록들: {emotions_text}
+            기간: {len(emotion_records)}일간
+            
+            예시: "따뜻한 노랑", "차분한 파랑", "활기찬 주황" 등
+            색상 이름만 반환해주세요. 다른 설명은 포함하지 마세요.
+            """
+            
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                max_tokens=30
+            )
+            
+            return response.choices[0].message.content.strip()
+            
+        except Exception as e:
+            print(f"GPT-4o mini 평균 색상 이름 생성 오류: {str(e)}")
+            return "평균 감정색"
+    
+    @staticmethod
     def _convert_ai_result_to_color(ai_result: Dict) -> Dict:
         """AI 분석 결과를 색상 정보로 변환"""
         from services.emotion_color_service import EmotionColorService
         
         primary_emotion = ai_result.get("primary_emotion", "기쁨")
         intensity = ai_result.get("intensity", 5)
+        ai_color_name = ai_result.get("color_name", "")
         
-        color_info = EmotionColorService._get_color_with_intensity(primary_emotion, intensity)
+        # AI가 제공한 색상 이름이 있으면 사용, 없으면 기본 색상 사용
+        if ai_color_name:
+            color_info = EmotionColorService._get_color_with_intensity(primary_emotion, intensity)
+            color_info["name"] = ai_color_name  # AI가 제공한 색상 이름으로 덮어쓰기
+        else:
+            color_info = EmotionColorService._get_color_with_intensity(primary_emotion, intensity)
         
         return {
             "primary_emotion": primary_emotion,

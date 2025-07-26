@@ -6,70 +6,70 @@ class EmotionColorService:
     로버트 플루치크의 감정의 바퀴 기반 색상 매핑 서비스
     """
     
-    # 8가지 기본 감정과 색상 매핑
+    # 8가지 기본 감정과 감정의 바퀴 원색 매핑
     EMOTION_COLORS = {
         "기쁨": {
-            "name": "파스텔 옐로우",
-            "hex": "#FFE5B4",
-            "rgb": (255, 229, 180),
-            "description": "밝고 따뜻한 기쁨의 색"
+            "name": "옐로우",
+            "hex": "#FFFF00",
+            "rgb": (255, 255, 0),
+            "description": "기쁨의 원색"
         },
         "신뢰": {
-            "name": "파스텔 그린",
-            "hex": "#B8E6B8",
-            "rgb": (184, 230, 184),
-            "description": "안정감과 신뢰를 나타내는 색"
+            "name": "그린",
+            "hex": "#00FF00",
+            "rgb": (0, 255, 0),
+            "description": "신뢰의 원색"
         },
         "두려움": {
-            "name": "파스텔 그레이",
-            "hex": "#D3D3D3",
-            "rgb": (211, 211, 211),
-            "description": "불안과 두려움을 나타내는 색"
+            "name": "청록",
+            "hex": "#00FFFF",
+            "rgb": (0, 255, 255),
+            "description": "두려움의 원색"
         },
         "놀람": {
-            "name": "파스텔 오렌지",
-            "hex": "#FFD4B3",
-            "rgb": (255, 212, 179),
-            "description": "예상치 못한 놀람을 나타내는 색"
+            "name": "블루",
+            "hex": "#0000FF",
+            "rgb": (0, 0, 255),
+            "description": "놀람의 원색"
         },
         "슬픔": {
-            "name": "파스텔 블루",
-            "hex": "#B3D9FF",
-            "rgb": (179, 217, 255),
-            "description": "차분하고 슬픈 감정을 나타내는 색"
+            "name": "네이비",
+            "hex": "#000080",
+            "rgb": (0, 0, 128),
+            "description": "슬픔의 원색"
         },
         "혐오": {
-            "name": "파스텔 브라운",
-            "hex": "#D4C4A8",
-            "rgb": (212, 196, 168),
-            "description": "불쾌감과 혐오를 나타내는 색"
+            "name": "퍼플",
+            "hex": "#800080",
+            "rgb": (128, 0, 128),
+            "description": "혐오의 원색"
         },
         "분노": {
-            "name": "파스텔 레드",
-            "hex": "#FFB3B3",
-            "rgb": (255, 179, 179),
-            "description": "강렬한 분노를 나타내는 색"
+            "name": "레드",
+            "hex": "#FF0000",
+            "rgb": (255, 0, 0),
+            "description": "분노의 원색"
         },
         "기대": {
-            "name": "파스텔 퍼플",
-            "hex": "#E6B3E6",
-            "rgb": (230, 179, 230),
-            "description": "희망과 기대를 나타내는 색"
+            "name": "오렌지",
+            "hex": "#FFA500",
+            "rgb": (255, 165, 0),
+            "description": "기대의 원색"
         }
     }
     
-    # 감정 강도별 색상 변화 (1-10점)
+    # 감정 강도별 색상 변화 (1-10점) - 더 선명한 색상
     INTENSITY_MODIFIERS = {
-        1: {"name_suffix": " (매우 연함)", "brightness": 0.9},
-        2: {"name_suffix": " (연함)", "brightness": 0.85},
-        3: {"name_suffix": " (약간 연함)", "brightness": 0.8},
-        4: {"name_suffix": " (보통)", "brightness": 0.75},
-        5: {"name_suffix": " (보통)", "brightness": 0.7},
-        6: {"name_suffix": " (보통)", "brightness": 0.65},
-        7: {"name_suffix": " (약간 진함)", "brightness": 0.6},
-        8: {"name_suffix": " (진함)", "brightness": 0.55},
-        9: {"name_suffix": " (매우 진함)", "brightness": 0.5},
-        10: {"name_suffix": " (최대)", "brightness": 0.45}
+        1: {"brightness": 0.95, "saturation": 0.8},
+        2: {"brightness": 0.9, "saturation": 0.85},
+        3: {"brightness": 0.85, "saturation": 0.9},
+        4: {"brightness": 0.8, "saturation": 0.95},
+        5: {"brightness": 0.75, "saturation": 1.0},
+        6: {"brightness": 0.7, "saturation": 1.0},
+        7: {"brightness": 0.65, "saturation": 1.0},
+        8: {"brightness": 0.6, "saturation": 1.0},
+        9: {"brightness": 0.55, "saturation": 1.0},
+        10: {"brightness": 0.5, "saturation": 1.0}
     }
     
     @staticmethod
@@ -137,21 +137,36 @@ class EmotionColorService:
         return scores
     
     @staticmethod
-    def _get_color_with_intensity(emotion: str, intensity: int) -> Dict:
-        """감정과 강도에 따른 색상 정보 반환"""
+    def _get_color_with_intensity(emotion: str, intensity: int) -> dict:
+        """감정과 강도에 따른 색상 정보 반환 (더 선명한 색상)"""
         if emotion not in EmotionColorService.EMOTION_COLORS:
             emotion = "기쁨"  # 기본값
-        
         base_color = EmotionColorService.EMOTION_COLORS[emotion]
-        modifier = EmotionColorService.INTENSITY_MODIFIERS.get(intensity, 
-                                                              EmotionColorService.INTENSITY_MODIFIERS[5])
+        modifier = EmotionColorService.INTENSITY_MODIFIERS.get(intensity, EmotionColorService.INTENSITY_MODIFIERS[5])
         
-        # 강도에 따른 색상 조정
+        # 강도에 따른 색상 조정 (밝기와 채도 조정)
         adjusted_rgb = tuple(int(c * modifier["brightness"]) for c in base_color["rgb"])
-        adjusted_hex = "#{:02x}{:02x}{:02x}".format(*adjusted_rgb)
         
+        # 채도 조정 (더 선명하게)
+        saturation = modifier.get("saturation", 1.0)
+        if saturation < 1.0:
+            # RGB를 HSL로 변환하여 채도 조정
+            r, g, b = adjusted_rgb
+            max_val = max(r, g, b)
+            min_val = min(r, g, b)
+            delta = max_val - min_val
+            
+            if delta > 0:
+                # 채도 조정
+                new_delta = int(delta * saturation)
+                adjusted_rgb = tuple(
+                    int(max_val - new_delta * (max_val - c) / delta) if delta > 0 else c
+                    for c in adjusted_rgb
+                )
+        
+        adjusted_hex = "#{:02x}{:02x}{:02x}".format(*adjusted_rgb)
         return {
-            "name": base_color["name"] + modifier["name_suffix"],
+            "name": base_color["name"],
             "hex": adjusted_hex,
             "rgb": adjusted_rgb,
             "description": base_color["description"],
@@ -179,14 +194,70 @@ class EmotionColorService:
         # 가장 가까운 감정 찾기
         closest_emotion = EmotionColorService._find_closest_emotion(avg_rgb)
         
+        # 평균 색상의 특성 분석
+        avg_intensity = sum(record.get("intensity", 5) for record in emotion_records) / count
+        
+        # AI가 생성한 색상 이름 시도
+        try:
+            from services.ai_analysis_service import AIAnalysisService
+            ai_color_name = AIAnalysisService.generate_average_color_name_with_gpt(emotion_records)
+            if ai_color_name and ai_color_name != "평균 감정색":
+                color_name = ai_color_name
+            else:
+                color_name = EmotionColorService._generate_average_color_name(avg_rgb, closest_emotion, avg_intensity)
+        except:
+            color_name = EmotionColorService._generate_average_color_name(avg_rgb, closest_emotion, avg_intensity)
+        
         return {
-            "name": f"평균 감정색 ({closest_emotion})",
+            "name": color_name,
             "hex": avg_hex,
             "rgb": avg_rgb,
             "description": f"지난 {count}일간의 평균 감정을 나타내는 색입니다.",
             "period": count,
-            "closest_emotion": closest_emotion
+            "closest_emotion": closest_emotion,
+            "average_intensity": round(avg_intensity, 1)
         }
+    
+    @staticmethod
+    def _generate_average_color_name(rgb: Tuple[int, int, int], emotion: str, intensity: float) -> str:
+        """평균 색상의 이름을 생성"""
+        r, g, b = rgb
+        
+        # 색상의 밝기 계산
+        brightness = (r + g + b) / 3
+        
+        # 색상의 채도 계산
+        max_val = max(r, g, b)
+        min_val = min(r, g, b)
+        saturation = (max_val - min_val) / max_val if max_val > 0 else 0
+        
+        # 색상 이름 생성
+        if brightness > 200:
+            prefix = "밝은"
+        elif brightness > 150:
+            prefix = "선명한"
+        elif brightness > 100:
+            prefix = "중간"
+        elif brightness > 50:
+            prefix = "어두운"
+        else:
+            prefix = "깊은"
+        
+        # 감정에 따른 색상 이름 매핑
+        emotion_colors = {
+            "기쁨": "노랑",
+            "신뢰": "초록",
+            "두려움": "청록",
+            "놀람": "파랑",
+            "슬픔": "남색",
+            "혐오": "보라",
+            "분노": "빨강",
+            "기대": "주황"
+        }
+        
+        base_color = emotion_colors.get(emotion, "회색")
+        
+        return f"{prefix} {base_color}"
     
     @staticmethod
     def _find_closest_emotion(rgb: Tuple[int, int, int]) -> str:
