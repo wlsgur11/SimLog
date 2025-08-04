@@ -94,6 +94,124 @@ class ApiService {
     }
   }
 
+  // 정원 관련 API 메서드들
+  static Future<Map<String, dynamic>> checkAttendance(String accessToken) async {
+    final url = Uri.parse('$baseUrl/garden/attendance');
+    final response = await http.post(
+      url,
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+      },
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception(jsonDecode(response.body)['detail'] ?? '출석 체크 실패');
+    }
+  }
+
+  static Future<Map<String, dynamic>> getGardenInfo(String accessToken) async {
+    final url = Uri.parse('$baseUrl/garden/info');
+    final response = await http.get(
+      url,
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+      },
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('정원 정보 조회 실패');
+    }
+  }
+
+  static Future<Map<String, dynamic>> getShopItems() async {
+    final url = Uri.parse('$baseUrl/garden/shop');
+    final response = await http.get(url);
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('상점 아이템 조회 실패');
+    }
+  }
+
+  static Future<Map<String, dynamic>> purchaseItem({
+    required String accessToken,
+    required int templateId,
+    int quantity = 1,
+  }) async {
+    final url = Uri.parse('$baseUrl/garden/purchase/$templateId?quantity=$quantity');
+    final response = await http.post(
+      url,
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+      },
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception(jsonDecode(response.body)['detail'] ?? '아이템 구매 실패');
+    }
+  }
+
+  static Future<Map<String, dynamic>> equipItem({
+    required String accessToken,
+    required int itemId,
+    required int positionX,
+    required int positionY,
+    String? variant,
+  }) async {
+    String url = '$baseUrl/garden/equip/$itemId?position_x=$positionX&position_y=$positionY';
+    if (variant != null) {
+      url += '&variant=$variant';
+    }
+    
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+      },
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception(jsonDecode(response.body)['detail'] ?? '아이템 배치 실패');
+    }
+  }
+
+  static Future<Map<String, dynamic>> unequipItem({
+    required String accessToken,
+    required int itemId,
+  }) async {
+    final url = Uri.parse('$baseUrl/garden/unequip/$itemId');
+    final response = await http.post(
+      url,
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+      },
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception(jsonDecode(response.body)['detail'] ?? '아이템 제거 실패');
+    }
+  }
+
+  static Future<Map<String, dynamic>> getInventory(String accessToken) async {
+    final url = Uri.parse('$baseUrl/garden/inventory');
+    final response = await http.get(
+      url,
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+      },
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('인벤토리 조회 실패');
+    }
+  }
+
   static Future<List<Map<String, dynamic>>> getRecords({
     required String accessToken,
     int skip = 0,

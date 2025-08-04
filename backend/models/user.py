@@ -14,5 +14,11 @@ class User(Base):
     is_developer = Column(Boolean, default=False)  # 개발자 모드 플래그
     created_at = Column(DateTime, default=datetime.utcnow)
     
+    # 씨앗(화폐) 시스템
+    seeds = Column(Integer, default=10)  # 기본 씨앗 10개
+    last_attendance_date = Column(DateTime, nullable=True)  # 마지막 출석 날짜
+    attendance_streak = Column(Integer, default=0)  # 연속 출석 일수
+    
     # 관계 설정
-    records = relationship("Record", back_populates="user") 
+    records = relationship("Record", back_populates="user")
+    garden_items = relationship("GardenItem", back_populates="user") 

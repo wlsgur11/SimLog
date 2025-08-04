@@ -59,9 +59,36 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/images/garden/
+    - assets/images/garden/flowers/
+    - assets/images/garden/flowers/big_paddle/
+    - assets/images/garden/bloom/
+    - assets/images/garden/bloom/color/
+    - assets/images/garden/rocks/
+    - assets/images/garden/fence/
+    - assets/images/garden/fence/white/
+    - assets/images/garden/fence/light_wood/
+    - assets/images/garden/bushes/
+    - assets/images/garden/bushes/bush/
+    - assets/images/garden/bushes/bush/light_green/
+    - assets/images/garden/bushes/bush/green/
+    - assets/images/garden/bushes/bush/moss_green/
+    - assets/images/garden/bushes/bush/dark_moss_green/
+    - assets/images/garden/bridge/
+    - assets/images/garden/pond/
+    - assets/images/garden/pond/pond/
+    - assets/images/garden/pond/pond_borders/
+    - assets/images/garden/pond/pond_borders/green/
+    - assets/images/garden/pond/pond_borders/light_green/
+    - assets/images/garden/pond/pond_borders/grey/
+    - assets/images/garden/pond/pond_borders/dark_grey/
+    - assets/images/garden/fishes/
+    - assets/images/garden/lotus/
+    - assets/images/garden/veggie/
+    - assets/images/garden/veggie/single/
+    - assets/images/garden/veggie/veggie_option/
+    - assets/images/garden/backgrounds/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
