@@ -104,4 +104,20 @@ async def get_inventory(
         items = GardenService.get_user_inventory(db, current_user.id)
         return {"items": items}
     except Exception as e:
+        raise HTTPException(status_code=500, detail="서버 오류가 발생했습니다")
+
+@router.post("/sell/{item_id}")
+async def sell_item(
+    item_id: int,
+    quantity: int = 1,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """아이템 판매"""
+    try:
+        result = GardenService.sell_item(db, current_user.id, item_id, quantity)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
         raise HTTPException(status_code=500, detail="서버 오류가 발생했습니다") 

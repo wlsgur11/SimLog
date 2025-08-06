@@ -212,6 +212,30 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> sellItem({
+    required String accessToken,
+    required int itemId,
+    int quantity = 1,
+  }) async {
+    final url = Uri.parse('$baseUrl/garden/sell/$itemId');
+    final response = await http.post(
+      url,
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'quantity': quantity,
+      }),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final errorBody = jsonDecode(response.body);
+      throw Exception(errorBody['detail'] ?? '아이템 판매 실패');
+    }
+  }
+
   static Future<List<Map<String, dynamic>>> getRecords({
     required String accessToken,
     int skip = 0,

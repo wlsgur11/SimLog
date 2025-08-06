@@ -10,7 +10,7 @@ class AnalysisScreen extends StatefulWidget {
   AnalysisScreenState createState() => AnalysisScreenState();
 }
 
-class AnalysisScreenState extends State<AnalysisScreen> {
+class AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStateMixin {
   bool isLoading = true;
   Map<String, dynamic>? statistics;
   List<Map<String, dynamic>> records = [];
@@ -22,16 +22,51 @@ class AnalysisScreenState extends State<AnalysisScreen> {
   final Map<String, List<Map<String, dynamic>>> _recordsCache = {};
   final Map<String, DateTime> _cacheTimestamps = {};
   static const Duration _cacheValidDuration = Duration(minutes: 5); // 5분간 캐시 유효
+  
+  // 애니메이션 컨트롤러
+  late AnimationController _fadeController;
+  late AnimationController _slideController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeInOut,
+    ));
+    
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeOutCubic,
+    ));
+    
+    _fadeController.forward();
+    _slideController.forward();
     _loadData();
   }
 
   @override
   void dispose() {
     _disposed = true;
+    _fadeController.dispose();
+    _slideController.dispose();
     super.dispose();
   }
 
@@ -162,22 +197,41 @@ class AnalysisScreenState extends State<AnalysisScreen> {
           ),
         ],
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadData,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildStatisticsCard(),
-                    const SizedBox(height: 24),
-                    _buildRecordsList(),
-                  ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFE3F2FD),
+              Color(0xFFF3E5F5),
+              Colors.white,
+            ],
+          ),
+        ),
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : FadeTransition(
+                opacity: _fadeAnimation,
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: RefreshIndicator(
+                    onRefresh: _loadData,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildStatisticsCard(),
+                          const SizedBox(height: 24),
+                          _buildRecordsList(),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
 
@@ -185,65 +239,118 @@ class AnalysisScreenState extends State<AnalysisScreen> {
     if (statistics == null) return const SizedBox.shrink();
 
     return Card(
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '감정 통계',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatItem(
-                    '총 기록',
-                    '${statistics!['record_count'] ?? 0}개',
-                    Icons.article,
-                    Colors.blue,
+      elevation: 8,
+      shadowColor: Colors.black26,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF667eea),
+              Color(0xFF764ba2),
+            ],
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.2),
+                    ),
+                    child: const Icon(
+                      Icons.analytics,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Text(
+                    '감정 통계',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatItem(
+                      '총 기록',
+                      '${statistics!['record_count'] ?? 0}개',
+                      Icons.article,
+                      Colors.white,
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildAverageColorItem(
+                      statistics!['average_color'],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              // 감정 분포 표시
+              if (statistics!['emotion_distribution'] != null && 
+                  (statistics!['emotion_distribution'] as Map).isNotEmpty) ...[
+                const Text(
+                  '감정 분포',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
                 ),
-                Expanded(
-                  child: _buildAverageColorItem(
-                    statistics!['average_color'],
-                  ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: (statistics!['emotion_distribution'] as Map<String, dynamic>)
+                      .entries
+                      .map((entry) => Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '${entry.key} ${entry.value}개',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ))
+                      .toList(),
                 ),
               ],
-            ),
-            const SizedBox(height: 16),
-            // 감정 분포 표시
-            if (statistics!['emotion_distribution'] != null && 
-                (statistics!['emotion_distribution'] as Map).isNotEmpty) ...[
-              const Text(
-                '감정 분포',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: (statistics!['emotion_distribution'] as Map<String, dynamic>)
-                    .entries
-                    .map((entry) => Chip(
-                          label: Text('${entry.key} ${entry.value}개'),
-                          backgroundColor: _getEmotionColor(entry.key).withOpacity(0.2),
-                          labelStyle: const TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ))
-                    .toList(),
+              const SizedBox(height: 16),
+              Text(
+                statistics!['message'] ?? '',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white.withOpacity(0.8),
+                ),
               ),
             ],
-            const SizedBox(height: 16),
-            Text(
-              statistics!['message'] ?? '',
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -252,15 +359,30 @@ class AnalysisScreenState extends State<AnalysisScreen> {
   Widget _buildStatItem(String label, String value, IconData icon, Color color) {
     return Column(
       children: [
-        Icon(icon, color: color, size: 32),
-        const SizedBox(height: 8),
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color.withOpacity(0.2),
+          ),
+          child: Icon(icon, color: color, size: 28),
+        ),
+        const SizedBox(height: 12),
         Text(
           value,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
         ),
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
+          style: TextStyle(
+            fontSize: 12,
+            color: color.withOpacity(0.8),
+          ),
         ),
       ],
     );
@@ -270,15 +392,30 @@ class AnalysisScreenState extends State<AnalysisScreen> {
     if (averageColor == null) {
       return Column(
         children: [
-          Icon(Icons.palette, color: Colors.grey, size: 32),
-          const SizedBox(height: 8),
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withOpacity(0.2),
+            ),
+            child: const Icon(Icons.palette, color: Colors.white, size: 28),
+          ),
+          const SizedBox(height: 12),
           const Text(
             '없음',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
-          const Text(
+          Text(
             '평균 감정색',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white.withOpacity(0.8),
+            ),
           ),
         ],
       );
@@ -297,30 +434,47 @@ class AnalysisScreenState extends State<AnalysisScreen> {
     return Column(
       children: [
         Container(
-          width: 40,
-          height: 40,
+          width: 60,
+          height: 60,
           decoration: BoxDecoration(
             color: parseColor(colorHex),
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.black12, width: 2),
+            border: Border.all(color: Colors.white, width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: parseColor(colorHex).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          child: const Icon(Icons.palette, color: Colors.white, size: 20),
+          child: const Icon(Icons.palette, color: Colors.white, size: 24),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Text(
           colorName,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
           textAlign: TextAlign.center,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
         Text(
           '평균 감정색',
-          style: const TextStyle(fontSize: 10, color: Colors.grey),
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.white.withOpacity(0.8),
+          ),
         ),
         Text(
           '강도: ${intensity}',
-          style: const TextStyle(fontSize: 10, color: Colors.grey),
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.white.withOpacity(0.8),
+          ),
         ),
       ],
     );

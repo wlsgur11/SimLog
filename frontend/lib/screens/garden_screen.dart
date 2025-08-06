@@ -9,6 +9,7 @@ class GardenItem {
   final String item_image;
   final int position_x;
   final int position_y;
+  final int layer;
   final bool is_equipped;
   final DateTime created_at;
 
@@ -20,6 +21,7 @@ class GardenItem {
     required this.item_image,
     required this.position_x,
     required this.position_y,
+    required this.layer,
     required this.is_equipped,
     required this.created_at,
   });
@@ -33,6 +35,7 @@ class GardenItem {
       item_image: json['item_image'] ?? '',
       position_x: json['position_x'] ?? 0,
       position_y: json['position_y'] ?? 0,
+      layer: json['layer'] ?? 0,
       is_equipped: json['is_equipped'] ?? false,
       created_at: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
     );
@@ -117,7 +120,7 @@ class GardenScreenState extends State<GardenScreen> {
         inventory = inventoryList?.cast<Map<String, dynamic>>() ?? <Map<String, dynamic>>[];
         
         // 배치된 아이템들만 정원에 표시
-        _gardenItems = inventoryList?.where((item) => item['is_equipped'] == true).map((item) {
+        _gardenItems = (inventoryList?.where((item) => item['is_equipped'] == true).map((item) {
           return GardenItem(
             id: item['id'] ?? 0,
             user_id: 0,
@@ -126,13 +129,14 @@ class GardenScreenState extends State<GardenScreen> {
             item_image: item['item_image'] ?? '',
             position_x: item['position_x'] ?? 0,
             position_y: item['position_y'] ?? 0,
+            layer: item['layer'] ?? 0,
             is_equipped: item['is_equipped'] ?? false,
             created_at: DateTime.now(),
           );
-        }).toList() ?? [];
+        }).toList() ?? []) as List<GardenItem>;
         
         // 배치되지 않은 아이템들만 인벤토리에 표시
-        _inventoryItems = inventoryList?.where((item) => item['is_equipped'] == false).map((item) {
+        _inventoryItems = (inventoryList?.where((item) => item['is_equipped'] == false).map((item) {
           return GardenItem(
             id: item['id'] ?? 0,
             user_id: 0,
@@ -141,10 +145,11 @@ class GardenScreenState extends State<GardenScreen> {
             item_image: item['item_image'] ?? '',
             position_x: item['position_x'] ?? 0,
             position_y: item['position_y'] ?? 0,
+            layer: item['layer'] ?? 0,
             is_equipped: item['is_equipped'] ?? false,
             created_at: DateTime.now(),
           );
-        }).toList() ?? [];
+        }).toList() ?? []) as List<GardenItem>;
         
         final shopResponse = results[2] as Map<String, dynamic>?;
         final shopList = shopResponse?['items'] as List<dynamic>?;
@@ -199,6 +204,7 @@ class GardenScreenState extends State<GardenScreen> {
           SnackBar(
             content: Text(result['message'] ?? '출석 체크 완료'),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
           ),
         );
         
@@ -211,6 +217,7 @@ class GardenScreenState extends State<GardenScreen> {
           SnackBar(
             content: Text('출석 체크 실패: ${e.toString()}'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -230,6 +237,7 @@ class GardenScreenState extends State<GardenScreen> {
           SnackBar(
             content: Text(result['message'] ?? '구매 완료'),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
           ),
         );
         
@@ -242,6 +250,7 @@ class GardenScreenState extends State<GardenScreen> {
           SnackBar(
             content: Text('구매 실패: ${e.toString()}'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -263,6 +272,7 @@ class GardenScreenState extends State<GardenScreen> {
           SnackBar(
             content: Text(result['message'] ?? '배치 완료'),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
           ),
         );
         
@@ -275,6 +285,7 @@ class GardenScreenState extends State<GardenScreen> {
           SnackBar(
             content: Text('배치 실패: ${e.toString()}'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -293,6 +304,7 @@ class GardenScreenState extends State<GardenScreen> {
           SnackBar(
             content: Text(result['message'] ?? '제거 완료'),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
           ),
         );
         
@@ -304,10 +316,137 @@ class GardenScreenState extends State<GardenScreen> {
           SnackBar(
             content: Text('제거 실패: ${e.toString()}'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
     }
+  }
+
+  Future<void> _sellItem(int itemId, int quantity) async {
+    try {
+      final result = await ApiService.sellItem(
+        accessToken: widget.accessToken,
+        itemId: itemId,
+        quantity: quantity,
+      );
+      
+      if (mounted && !_disposed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? '판매 완료'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        
+        _loadData();
+      }
+    } catch (e) {
+      if (mounted && !_disposed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('판매 실패: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  void _showSellDialog(GardenItem item, int maxQuantity) {
+    int quantity = 1;
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text('${item.item_name} 판매하기'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: _getItemWidget(item, size: 24),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.item_name,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '보유 수량: $maxQuantity개',
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Text('판매 수량: '),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: quantity > 1 ? () => setState(() => quantity--) : null,
+                          icon: const Icon(Icons.remove),
+                        ),
+                        Text('$quantity'),
+                        IconButton(
+                          onPressed: quantity < maxQuantity ? () => setState(() => quantity++) : null,
+                          icon: const Icon(Icons.add),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '판매 가격: ${quantity * 5} 씨앗', // 기본 판매가 5씨앗
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _sellItem(item.id, quantity);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('판매'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showPlacementDialog() {
@@ -751,13 +890,25 @@ class GardenScreenState extends State<GardenScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+    final isPhone = screenWidth < 400;
+    
     return DefaultTabController(
       length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('마음 정원'),
           centerTitle: true,
-          bottom: const TabBar(
+          bottom: TabBar(
+            isScrollable: isPhone, // 작은 화면에서는 스크롤 가능
+            labelStyle: TextStyle(
+              fontSize: isTablet ? 16.0 : (isPhone ? 12.0 : 14.0),
+              fontWeight: FontWeight.bold,
+            ),
+            unselectedLabelStyle: TextStyle(
+              fontSize: isTablet ? 16.0 : (isPhone ? 12.0 : 14.0),
+            ),
             tabs: [
               Tab(text: '정원'),
               Tab(text: '내 씨앗'),
@@ -817,12 +968,16 @@ class GardenScreenState extends State<GardenScreen> {
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.brown, width: 2),
                       ),
-                      child: _buildGardenGrid(),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: _buildGardenGrid(),
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
+            const SizedBox(height: 20), // 하단 여백 추가
           ],
         ),
       ),
@@ -1043,6 +1198,21 @@ class GardenScreenState extends State<GardenScreen> {
                                                 ),
                                               ),
                                             ),
+                                            const SizedBox(width: 8),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                              decoration: BoxDecoration(
+                                                color: _getLayerColor(item['layer'] ?? 1),
+                                                borderRadius: BorderRadius.circular(3),
+                                              ),
+                                              child: Text(
+                                                _getLayerName(item['layer'] ?? 1),
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 8,
+                                                ),
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ],
@@ -1141,13 +1311,35 @@ class GardenScreenState extends State<GardenScreen> {
                   ),
                 ],
               ),
-              subtitle: const Text(
-                '인벤토리에 보관중',
-                style: TextStyle(color: Colors.grey),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '인벤토리에 보관중',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: _getLayerColor(firstItem.layer),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      _getLayerName(firstItem.layer),
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               trailing: IconButton(
-                icon: const Icon(Icons.add_circle, color: Colors.green),
-                onPressed: () => _showInventorySelectionDialog(0, 0), // 위치는 나중에 선택
+                icon: const Icon(Icons.sell, color: Colors.orange),
+                onPressed: () => _showSellDialog(firstItem, count),
+                tooltip: '판매하기',
               ),
             ),
           );
@@ -1308,22 +1500,50 @@ class GardenScreenState extends State<GardenScreen> {
   }
 
   Widget _getItemWidget(GardenItem item, {double size = 16}) {
-    String? imagePath = _getItemImageByName(item.item_name);
+    // 먼저 데이터베이스에 저장된 이미지 경로를 사용
+    String? imagePath = item.item_image;
+    
+    // 데이터베이스에 저장된 이미지가 없으면 기본 이미지 사용
+    if (imagePath == null || imagePath.isEmpty) {
+      imagePath = _getItemImageByName(item.item_name);
+    }
+    
     if (imagePath != null && imagePath.isNotEmpty) {
       // 실제 이미지가 있으면 이미지 사용
-      return Image.asset(
-        imagePath,
-        width: size,
-        height: size,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) {
-          // 이미지 로드 실패시 아이콘 사용
-          return Icon(_getItemIcon(item.item_type), size: size);
-        },
-      );
+      if (size == double.infinity) {
+        return Image.asset(
+          imagePath,
+          width: double.infinity,
+          height: double.infinity,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            // 이미지 로드 실패시 아이콘 사용
+            return Center(
+              child: Icon(_getItemIcon(item.item_type), size: 32),
+            );
+          },
+        );
+      } else {
+        return Image.asset(
+          imagePath,
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            // 이미지 로드 실패시 아이콘 사용
+            return Icon(_getItemIcon(item.item_type), size: size);
+          },
+        );
+      }
     } else {
       // 이미지가 없으면 아이콘 사용
-      return Icon(_getItemIcon(item.item_type), size: size);
+      if (size == double.infinity) {
+        return Center(
+          child: Icon(_getItemIcon(item.item_type), size: 32),
+        );
+      } else {
+        return Icon(_getItemIcon(item.item_type), size: size);
+      }
     }
   }
 
@@ -1487,11 +1707,9 @@ class GardenScreenState extends State<GardenScreen> {
     else if (item.item_name.contains('부시')) {
       String color = 'light_green'; // 기본값
       if (item.item_name.contains('연한 초록')) color = 'light_green';
-      else if (item.item_name.contains('초록')) color = 'green';
-      else if (item.item_name.contains('이끼 초록')) color = 'moss_green';
+      else if (item.item_name.contains('초록') && !item.item_name.contains('이끼')) color = 'green';
+      else if (item.item_name.contains('이끼 초록') && !item.item_name.contains('어두운')) color = 'moss_green';
       else if (item.item_name.contains('어두운 이끼')) color = 'dark_moss_green';
-      
-
       
       // 모든 방향에 대한 매핑
       if (variant == 'horizontal') {
@@ -1743,105 +1961,123 @@ class GardenScreenState extends State<GardenScreen> {
   }
 
   Widget _buildGardenGrid() {
-
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isTablet = screenWidth > 600;
+    final isPhone = screenWidth < 400;
+    
+    // 화면 크기에 따라 그리드 크기 조정
+    final gridHeight = isTablet ? 600.0 : (isPhone ? 400.0 : 500.0);
+    final crossAxisCount = isTablet ? 8 : 6; // 태블릿에서는 더 많은 열
+    final spacing = isTablet ? 3.0 : 2.0;
     
     return Container(
-      height: 400, // 고정 높이 설정
+      height: gridHeight,
       child: GridView.builder(
         shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
+        physics: const AlwaysScrollableScrollPhysics(), // 스크롤 가능하도록 변경
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 6,
+          crossAxisCount: crossAxisCount,
           childAspectRatio: 1.0,
-          crossAxisSpacing: 2,
-          mainAxisSpacing: 2,
+          crossAxisSpacing: spacing,
+          mainAxisSpacing: spacing,
         ),
-        itemCount: 72, // 6x12 = 72
+        itemCount: crossAxisCount * 12, // 동적으로 계산
         itemBuilder: (context, index) {
-          int x = index % 6;
-          int y = index ~/ 6;
+          int x = index % crossAxisCount;
+          int y = index ~/ crossAxisCount;
           
-          // 해당 위치에 배치된 아이템 찾기
-          GardenItem placedItem;
-          try {
-            placedItem = _gardenItems.firstWhere(
-              (item) => item.position_x == x && item.position_y == y && item.is_equipped,
-              orElse: () => GardenItem(
-                id: -1,
-                user_id: 0,
-                item_type: '',
-                item_name: '',
-                item_image: '',
-                position_x: 0,
-                position_y: 0,
-                is_equipped: false,
-                created_at: DateTime.now(),
-              ),
-            );
-          } catch (e) {
-            placedItem = GardenItem(
-              id: -1,
-              user_id: 0,
-              item_type: '',
-              item_name: '',
-              item_image: '',
-              position_x: 0,
-              position_y: 0,
-              is_equipped: false,
-              created_at: DateTime.now(),
-            );
-          }
-          
-          if (placedItem.id != -1) {
-            // 아이템이 배치된 경우 - PNG로 꽉 채우기
-            String? imagePath = _getItemImageByName(placedItem.item_name);
-            
-            // 아이템의 실제 이미지 경로를 우선 사용
-            String finalImagePath = placedItem.item_image.isNotEmpty ? placedItem.item_image : (imagePath ?? '');
-            
-            return GestureDetector(
-              onTap: () {
-                if (mounted && !_disposed) {
-                  _removeItem(placedItem.id);
-                }
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Color(0xFF8B4513), // 배경색을 흙색으로
-                  borderRadius: BorderRadius.circular(2),
-                ),
-                child: finalImagePath.isNotEmpty
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(2),
-                        child: _buildItemImage(finalImagePath, placedItem.item_name),
-                      )
-                    : Container(
-                        color: Colors.grey[300],
-                        child: Icon(Icons.help_outline, size: 16),
-                      ),
-              ),
-            );
-          } else {
-            // 빈 셀 - 클릭 시 아이템 배치
-            return GestureDetector(
-              onTap: () {
-                if (mounted && !_disposed) {
-                  _showInventorySelectionDialog(x, y);
-                }
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Color(0xFF8B4513), // 진한 흙색
-                  border: Border.all(color: Color(0xFF654321), width: 1), // 어두운 흙색 테두리
-                  borderRadius: BorderRadius.circular(2),
-                ),
-                // + 표시 제거하여 자연스러운 흙 느낌
-              ),
-            );
-          }
+          return _buildGridCell(x, y, crossAxisCount);
         },
       ),
     );
+  }
+
+  Widget _buildGridCell(int x, int y, int crossAxisCount) {
+    // 해당 위치의 모든 아이템들을 레이어 순서대로 정렬
+    List<GardenItem> itemsAtPosition = _gardenItems
+        .where((item) => item.position_x == x && item.position_y == y && item.is_equipped)
+        .toList();
+    
+    // 레이어 순서대로 정렬 (0: 배경, 1: 중간, 2: 식물, 3: 동물)
+    itemsAtPosition.sort((a, b) => a.layer.compareTo(b.layer));
+    
+    if (itemsAtPosition.isEmpty) {
+      // 빈 셀 - 클릭 시 아이템 배치
+      return GestureDetector(
+        onTap: () {
+          if (mounted && !_disposed) {
+            _showInventorySelectionDialog(x, y);
+          }
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: Color(0xFF8B4513), // 진한 흙색
+            border: Border.all(color: Color(0xFF654321), width: 1), // 어두운 흙색 테두리
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+      );
+    }
+    
+    // 아이템들이 있는 경우 - 레이어 순서대로 쌓기
+    return GestureDetector(
+      onTap: () {
+        if (mounted && !_disposed) {
+          // 아이템이 있는 셀을 클릭했을 때 선택 옵션 제공
+          _showOccupiedCellOptions(x, y, itemsAtPosition);
+        }
+      },
+      child: Stack(
+        children: itemsAtPosition.map((item) {
+          // 데이터베이스에 저장된 이미지 경로를 우선 사용
+          String? imagePath = item.item_image;
+          
+          // 데이터베이스에 저장된 이미지가 없으면 기본 이미지 사용
+          if (imagePath == null || imagePath.isEmpty) {
+            imagePath = _getItemImageByName(item.item_name);
+          }
+          
+          if (imagePath != null && imagePath.isNotEmpty) {
+            return _buildItemImage(imagePath, item.item_name);
+          } else {
+            return _getItemWidget(item, size: 50);
+          }
+        }).toList(),
+      ),
+    );
+  }
+
+
+
+  Color _getLayerColor(int layer) {
+    switch (layer) {
+      case 0:
+        return Colors.brown; // 배경
+      case 1:
+        return Colors.blue; // 중간
+      case 2:
+        return Colors.green; // 식물
+      case 3:
+        return Colors.orange; // 동물
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getLayerName(int layer) {
+    switch (layer) {
+      case 0:
+        return '배경';
+      case 1:
+        return '물/중간';
+      case 2:
+        return '식물';
+      case 3:
+        return '동물';
+      default:
+        return '알 수 없음';
+    }
   }
 
   void _showInventorySelectionDialog(int x, int y) {
@@ -1910,11 +2146,32 @@ class GardenScreenState extends State<GardenScreen> {
                     ),
                   ],
                 ),
-                subtitle: Text(
-                  '${firstItem.item_type}',
-                  style: const TextStyle(fontSize: 12),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${firstItem.item_type}',
+                      style: const TextStyle(fontSize: 12),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: _getLayerColor(firstItem.layer),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        _getLayerName(firstItem.layer),
+                        style: const TextStyle(
+                          fontSize: 8,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 onTap: () {
                   Navigator.of(context).pop();
@@ -1930,6 +2187,100 @@ class GardenScreenState extends State<GardenScreen> {
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('취소'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showOccupiedCellOptions(int x, int y, List<GardenItem> itemsAtPosition) {
+    if (!mounted || _disposed) return;
+
+    // 가장 위에 있는 아이템
+    GardenItem topItem = itemsAtPosition.last;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('셀 옵션'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 현재 배치된 아이템들 표시
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    '현재 배치된 아이템들:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  ...itemsAtPosition.map((item) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 24,
+                          height: 24,
+                          child: _getItemWidget(item, size: 20),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${item.item_name} (${_getLayerName(item.layer)})',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )).toList(),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '이 위치에서 무엇을 하시겠습니까?',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              if (mounted && !_disposed) {
+                // 새 아이템 배치
+                _showInventorySelectionDialog(x, y);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('새 아이템 배치'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              if (mounted && !_disposed) {
+                // 가장 위에 있는 아이템 제거
+                _removeItem(topItem.id);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('아이템 제거'),
           ),
         ],
       ),

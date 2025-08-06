@@ -52,9 +52,9 @@ class RecordService:
         
         db.add(record)
         
-        # 일기 작성 시 씨앗 지급 (기본 1개)
+        # 일기 작성 시 씨앗 지급 (기본 2개)
         if user:
-            user.seeds += 1
+            user.seeds += 2
         
         db.commit()
         db.refresh(record)

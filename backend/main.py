@@ -7,6 +7,10 @@ from models.user import User
 from models.record import Record
 from models.garden_item import GardenItem, GardenItemTemplate
 import os
+import logging
+
+# 로깅 설정
+logging.basicConfig(level=logging.INFO)
 
 Base.metadata.create_all(bind=engine)
 

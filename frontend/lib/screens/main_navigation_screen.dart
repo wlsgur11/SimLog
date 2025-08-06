@@ -86,6 +86,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isTablet = screenWidth > 600;
+    final isPhone = screenWidth < 400;
+    
     return Scaffold(
       body: _selectedIndex == -1
           ? HomeScreen(
@@ -99,17 +104,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               },
             )
           : _screens[_selectedIndex],
-      floatingActionButton: _selectedIndex == -1
-          ? null
-          : FloatingActionButton(
-              onPressed: _onFloatingActionButtonPressed,
-              backgroundColor: Colors.deepPurple,
-              foregroundColor: Colors.white,
-              child: const Icon(Icons.add, size: 28),
-            ),
-      floatingActionButtonLocation: _selectedIndex == -1
-          ? null
-          : FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: _selectedIndex == -1
           ? null
           : SafeArea(
@@ -125,7 +119,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ],
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 32.0 : 16.0, 
+                    vertical: isTablet ? 12.0 : 8.0
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
@@ -135,6 +132,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           label: '홈',
                           isSelected: false,
                           onTap: _onHomeTapped,
+                          isTablet: isTablet,
+                          isPhone: isPhone,
                         ),
                       ),
                       Expanded(
@@ -143,15 +142,31 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           label: '분석',
                           isSelected: _selectedIndex == 0,
                           onTap: () => _onItemTapped(0),
+                          isTablet: isTablet,
+                          isPhone: isPhone,
                         ),
                       ),
-                      const SizedBox(width: 40),
+                      // + 버튼을 네비게이션 바에 직접 추가
+                      Container(
+                        width: isTablet ? 70 : 60,
+                        height: isTablet ? 70 : 60,
+                        margin: EdgeInsets.only(bottom: isTablet ? 25 : 20),
+                        child: FloatingActionButton(
+                          onPressed: _onFloatingActionButtonPressed,
+                          backgroundColor: Colors.deepPurple,
+                          foregroundColor: Colors.white,
+                          elevation: 4,
+                          child: Icon(Icons.add, size: isTablet ? 32 : 28),
+                        ),
+                      ),
                       Expanded(
                         child: _buildNavButton(
                           icon: Icons.eco,
                           label: '정원',
                           isSelected: _selectedIndex == 1,
                           onTap: () => _onItemTapped(1),
+                          isTablet: isTablet,
+                          isPhone: isPhone,
                         ),
                       ),
                       Expanded(
@@ -160,6 +175,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           label: '내정보',
                           isSelected: _selectedIndex == 2,
                           onTap: () => _onItemTapped(2),
+                          isTablet: isTablet,
+                          isPhone: isPhone,
                         ),
                       ),
                     ],
@@ -175,26 +192,32 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     required String label,
     required bool isSelected,
     required VoidCallback onTap,
+    required bool isTablet,
+    required bool isPhone,
   }) {
+    final iconSize = isTablet ? 26.0 : (isPhone ? 20.0 : 22.0);
+    final fontSize = isTablet ? 13.0 : (isPhone ? 10.0 : 11.0);
+    final padding = isTablet ? 12.0 : 8.0;
+    
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        padding: EdgeInsets.symmetric(vertical: padding),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
               color: isSelected ? Colors.deepPurple : Colors.grey,
-              size: 22,
+              size: iconSize,
             ),
-            const SizedBox(height: 2),
+            SizedBox(height: isTablet ? 4 : 2),
             Flexible(
               child: Text(
                 label,
                 style: TextStyle(
                   color: isSelected ? Colors.deepPurple : Colors.grey,
-                  fontSize: 11,
+                  fontSize: fontSize,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
                 overflow: TextOverflow.ellipsis,

@@ -32,8 +32,11 @@ class GardenService:
         else:
             user.attendance_streak = 1
         
-        # 씨앗 지급 (기본 1개 + 연속 출석 보너스)
-        seeds_earned = 1 + min(user.attendance_streak // 7, 2)  # 7일마다 추가 보너스, 최대 3개
+        # 씨앗 지급 (기본 2개 + 연속 출석 보너스)
+        base_seeds = 2
+        streak_bonus = min(user.attendance_streak // 3, 3)  # 3일마다 추가 보너스, 최대 3개
+        weekly_bonus = 5 if user.attendance_streak % 7 == 0 else 0  # 7일마다 특별 보너스
+        seeds_earned = base_seeds + streak_bonus + weekly_bonus
         
         user.seeds += seeds_earned
         user.last_attendance_date = datetime.now()
@@ -70,7 +73,8 @@ class GardenService:
                     "item_name": item.item_name,
                     "item_image": item.item_image,
                     "position_x": item.position_x,
-                    "position_y": item.position_y
+                    "position_y": item.position_y,
+                    "layer": item.layer
                 }
                 for item in garden_items
             ]
@@ -148,11 +152,6 @@ class GardenService:
     @staticmethod
     def equip_item(db: Session, user_id: int, item_id: int, position_x: int, position_y: int, variant: str = None) -> Dict:
         """아이템을 정원에 배치 (변형 선택 가능)"""
-        print(f"=== 아이템 배치 시작 ===")
-        print(f"아이템 ID: {item_id}")
-        print(f"위치: ({position_x}, {position_y})")
-        print(f"변형: {variant}")
-        
         item = db.query(GardenItem).filter(
             and_(GardenItem.id == item_id, GardenItem.user_id == user_id)
         ).first()
@@ -160,13 +159,9 @@ class GardenService:
         if not item:
             raise ValueError("아이템을 찾을 수 없습니다")
         
-        print(f"아이템 이름: {item.item_name}")
-        print(f"기존 이미지: {item.item_image}")
-        
         # 변형에 따른 이미지 경로 업데이트
         if variant:
             item_name = item.item_name
-            print(f"변형 처리 시작 - 아이템: {item_name}, 변형: {variant}")
             
             if "연꽃" in item_name:
                 # 연꽃 변형
@@ -178,7 +173,6 @@ class GardenService:
                 }
                 new_image = f"assets/images/garden/lotus/{color_map.get(variant, 'light_green.png')}"
                 item.item_image = new_image
-                print(f"연꽃 이미지 업데이트: {new_image}")
             elif "꽃" in item_name:
                 # 꽃 변형
                 color_map = {
@@ -195,8 +189,6 @@ class GardenService:
                         color = color_code
                         break
                 
-                print(f"꽃 색상: {color}")
-                
                 size_map = {
                     'small_paddles': 'small_paddles',
                     'big_paddles': 'big_paddles',
@@ -204,25 +196,21 @@ class GardenService:
                 size = size_map.get(variant, 'small_paddles')
                 new_image = f"assets/images/garden/flowers/big_paddle/{color}_{size}.png"
                 item.item_image = new_image
-                print(f"꽃 이미지 업데이트: {new_image}")
             elif "부시" in item_name:
                 # 부시 변형
-                print("부시 변형 처리 시작")
-                color_map = {
-                    '연한 초록': 'light_green',
-                    '초록': 'green',
-                    '이끼 초록': 'moss_green',
-                    '어두운 이끼': 'dark_moss_green',
-                }
-                color = 'light_green'  # 기본값
-                for color_name, color_code in color_map.items():
-                    if color_name in item_name:
-                        color = color_code
-                        break
+                # 부시 색상 매핑 - 더 정확한 매칭을 위해 조건부 처리
+                if '연한 초록' in item_name:
+                    color = 'light_green'
+                elif '초록' in item_name and '이끼' not in item_name:
+                    color = 'green'
+                elif '이끼 초록' in item_name and '어두운' not in item_name:
+                    color = 'moss_green'
+                elif '어두운 이끼' in item_name:
+                    color = 'dark_moss_green'
+                else:
+                    color = 'light_green'  # 기본값
                 
-                print(f"부시 색상: {color}")
-                
-                # 방향별 이미지 매핑
+                # 방향별 이미지 매핑 - 실제 파일명과 일치하도록 수정
                 direction_map = {
                     'horizontal': 'horizontal_regular.png',
                     'vertical': 'vertical_regular.png',
@@ -239,8 +227,6 @@ class GardenService:
                 direction_file = direction_map.get(variant, 'horizontal_regular.png')
                 new_image = f"assets/images/garden/bushes/bush/{color}/{direction_file}"
                 item.item_image = new_image
-                print(f"부시 이미지 업데이트: {new_image}")
-                print(f"변형: {variant} -> 파일: {direction_file}")
             elif "울타리" in item_name:
                 # 울타리 변형
                 color_map = {
@@ -252,8 +238,6 @@ class GardenService:
                     if color_name in item_name:
                         color = color_code
                         break
-                
-                print(f"울타리 색상: {color}")
                 
                 # 방향별 이미지 매핑
                 color_name = 'White' if color == 'white' else 'Light Wood'
@@ -283,8 +267,6 @@ class GardenService:
                     new_image = f"assets/images/garden/fence/{color}/Direction=↔️ Horizontal, Color={color_name}.png"
                 
                 item.item_image = new_image
-                print(f"울타리 이미지 업데이트: {new_image}")
-                print(f"변형: {variant} -> 파일: {new_image}")
             elif "나무 다리" in item_name:
                 # 나무 다리 변형
 
@@ -351,7 +333,6 @@ class GardenService:
                 }
                 new_image = f"assets/images/garden/lotus/{color_map.get(variant, 'light_green.png')}"
                 item.item_image = new_image
-                print(f"연꽃 이미지 업데이트: {new_image}")
             elif "꽃봉오리" in item_name:
                 # Bloom 변형
                 color_map = {
@@ -374,7 +355,6 @@ class GardenService:
                 size = size_map.get(variant, 'Bud')
                 new_image = f"assets/images/garden/bloom/color/Size={size}, Color={color}.png"
                 item.item_image = new_image
-                print(f"Bloom 이미지 업데이트: {new_image}")
             elif "연못 테두리" in item_name:
                 # 연못 테두리 변형
                 color_map = {
@@ -404,7 +384,6 @@ class GardenService:
                 color_name = 'Green' if color == 'green' else 'Light Green' if color == 'light_green' else 'Grey' if color == 'grey' else 'Dark Grey'
                 new_image = f"assets/images/garden/pond/pond_borders/{color}/Border Option=🌳 Bush, Color={color_name}, Direction={direction}.png"
                 item.item_image = new_image
-                print(f"연못 테두리 이미지 업데이트: {new_image}")
             elif any(veggie in item_name for veggie in ['토마토', '딸기', '당근', '양파', '마늘', '오이', '체리 토마토', '무']):
                 # 채소 변형
                 veggie_map = {
@@ -432,23 +411,24 @@ class GardenService:
                     new_image = f"assets/images/garden/veggie/single/Type={veggie_type}.png"
                 
                 item.item_image = new_image
-                print(f"채소 이미지 업데이트: {new_image}")
             elif "돌담" in item_name or "벽돌" in item_name:
                 # 돌담/벽돌 변형 - 현재는 기본 이미지만 사용 (실제 파일이 없음)
-                print("돌담/벽돌 변형 - 기본 이미지 유지")
                 pass
             else:
-                print(f"변형 처리되지 않은 아이템: {item_name}")
+                pass
         else:
-            print("변형이 없음 - 기본 이미지 유지")
+            pass
+        
+        # 레이어 설정
+        new_layer = GardenService._get_item_layer(item.item_name)
+        item.layer = new_layer
         
         item.is_equipped = True
         item.position_x = position_x
         item.position_y = position_y
         
-        print(f"최종 이미지: {item.item_image}")
-        
         db.commit()
+        db.refresh(item) # Ensure the item object reflects the committed state
         
         return {
             "message": f"{item.item_name}을 정원에 배치했습니다",
@@ -458,10 +438,51 @@ class GardenService:
                 "item_name": item.item_name,
                 "item_image": item.item_image,
                 "position_x": item.position_x,
-                "position_y": item.position_y
+                "position_y": item.position_y,
+                "layer": item.layer
             }
         }
     
+    @staticmethod
+    def _get_item_layer(item_name: str) -> int:
+        """아이템 이름을 기반으로 레이어를 결정"""
+        # 배경 아이템들 (레이어 0)
+        background_items = ['잔디', '모래', '흙', '돌', '자갈']
+        for bg_item in background_items:
+            if bg_item in item_name:
+                return 0
+        
+        # 물 관련 아이템들 (레이어 1)
+        water_items = ['연못', '물', '시냇물', '분수']
+        for water_item in water_items:
+            if water_item in item_name:
+                return 1
+        
+        # 장식 아이템들 (레이어 1)
+        decoration_items = ['울타리', '다리', '벤치', '등불', '문', '연못 테두리']
+        for dec_item in decoration_items:
+            if dec_item in item_name:
+                return 1
+        
+        # 식물 아이템들 (레이어 2) - 연못 위에 배치 가능
+        plant_items = ['꽃', '나무', '부시', '채소', '연꽃', '토마토', '딸기', '당근', '양파', '마늘', '오이', '무']
+        for plant_item in plant_items:
+            if plant_item in item_name:
+                return 2
+        
+        # 동물 아이템들 (레이어 3) - 물고기를 가장 앞으로 이동
+        # 물고기는 '물고기'가 포함된 모든 아이템 (빨간 물고기, 주황 물고기 등)
+        if '물고기' in item_name:
+            return 3
+        
+        animal_items = ['새', '나비', '벌', '주황 물고기', '빨간 물고기']
+        for animal_item in animal_items:
+            if animal_item in item_name:
+                return 3
+        
+        # 기본값은 레이어 2
+        return 2
+
     @staticmethod
     def unequip_item(db: Session, user_id: int, item_id: int) -> Dict:
         """아이템을 정원에서 제거"""
@@ -494,8 +515,52 @@ class GardenService:
                 "item_name": item.item_name,
                 "item_image": item.item_image,
                 "is_equipped": item.is_equipped,
+                "layer": item.layer,
                 "position_x": item.position_x,
                 "position_y": item.position_y
             }
             for item in items
-        ] 
+        ]
+
+    @staticmethod
+    def sell_item(db: Session, user_id: int, item_id: int, quantity: int = 1) -> Dict:
+        """아이템 판매"""
+        try:
+            # 사용자 조회
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user:
+                raise Exception("사용자를 찾을 수 없습니다")
+            
+            # 아이템 조회
+            item = db.query(GardenItem).filter(
+                GardenItem.id == item_id,
+                GardenItem.user_id == user_id
+            ).first()
+            
+            if not item:
+                raise Exception("판매할 아이템을 찾을 수 없습니다")
+            
+            # 배치된 아이템은 판매 불가
+            if item.is_equipped:
+                raise Exception("배치된 아이템은 판매할 수 없습니다. 먼저 제거해주세요")
+            
+            # 판매 가격 계산 (기본 5씨앗)
+            sell_price = 5 * quantity
+            
+            # 사용자 씨앗 증가
+            user.seeds += sell_price
+            
+            # 아이템 삭제
+            db.delete(item)
+            db.commit()
+            
+            return {
+                "success": True,
+                "message": f"아이템을 {sell_price}씨앗에 판매했습니다",
+                "seeds_earned": sell_price,
+                "remaining_seeds": user.seeds
+            }
+            
+        except Exception as e:
+            db.rollback()
+            raise Exception(f"아이템 판매 중 오류가 발생했습니다: {str(e)}") 
