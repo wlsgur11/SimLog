@@ -32,7 +32,8 @@ def create_user(db: Session, email: str, password: str, nickname: str, social_ty
         password=hashed_pw,
         nickname=nickname,
         social_type=social_type,
-        social_id=social_id
+        social_id=social_id,
+        seeds=200
     )
     db.add(user)
     db.commit()

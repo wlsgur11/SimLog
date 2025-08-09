@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../services/api_service.dart';
 import 'emotion_record_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -26,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _bounceAnimation;
+  bool _alertChecked = false;
 
   @override
   void initState() {
@@ -70,6 +74,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _fadeController.forward();
     _slideController.forward();
     _bounceController.forward();
+
+    // 알림 체크 (첫 진입 시 1회)
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _maybeShowKindAlert();
+    });
   }
 
   @override
@@ -250,6 +259,158 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _maybeShowKindAlert() async {
+    if (_alertChecked) return;
+    _alertChecked = true;
+    try {
+      final result = await ApiService.checkAlert(accessToken: widget.accessToken);
+      if (result['should_alert'] == true) {
+        if (!mounted) return;
+        _showKindAlertModal(
+          message: (result['message'] as String?) ?? '요즘 마음이 오래도록 힘들었어요.',
+          formUrl: (result['form_url'] as String?) ?? 'https://forms.gle/RM8vijEWkqgPo1de9',
+        );
+      }
+    } catch (_) {
+      // 무시: 알림 실패해도 앱 흐름엔 영향 없음
+    }
+  }
+
+  void _showKindAlertModal({required String message, required String formUrl}) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) {
+        bool consent = false;
+        bool loading = false;
+        return StatefulBuilder(builder: (context, setState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('괜찮아요, 함께 해볼까요?'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  message,
+                  style: const TextStyle(height: 1.4),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  '혹시 원하시면 최근 7일 요약을 간단히 공유할 수 있어요. 상담 선생님께 직접 링크를 보여드리면 됩니다. (7일 후 자동 만료, 전체 본문은 포함되지 않아요)',
+                  style: TextStyle(fontSize: 13, color: Colors.black54, height: 1.4),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: consent,
+                      onChanged: (v) => setState(() => consent = v ?? false),
+                    ),
+                    const Expanded(
+                      child: Text(
+                        '최근 7일 요약 공유에 동의합니다',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    )
+                  ],
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: loading
+                    ? null
+                    : () async {
+                        // 동의 없이 바로 폼 열기
+                        final uri = Uri.parse(formUrl);
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        }
+                        // 7일 억제
+                        try { await ApiService.ackAlert(accessToken: widget.accessToken); } catch (_) {}
+                        if (mounted) Navigator.of(context).pop();
+                      },
+                child: const Text('동의 없이 바로가기'),
+              ),
+              FilledButton(
+                onPressed: (!consent || loading)
+                    ? null
+                    : () async {
+                        setState(() => loading = true);
+                        try {
+                          await ApiService.setConsent(accessToken: widget.accessToken, consented: true);
+                          final created = await ApiService.createWeeklyShare(accessToken: widget.accessToken);
+                          final sharePath = created['share_path'] as String;
+                          final shareUrl = '${ApiService.baseUrl}$sharePath';
+                          // 7일 억제
+                          try { await ApiService.ackAlert(accessToken: widget.accessToken); } catch (_) {}
+                          if (!mounted) return;
+                          Navigator.of(context).pop();
+                          _showShareResult(shareUrl);
+                        } catch (e) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('링크 생성 실패: $e')),
+                          );
+                        } finally {
+                          if (mounted) setState(() => loading = false);
+                        }
+                      },
+                child: loading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2,color: Colors.white)) : const Text('동의하고 링크 만들기'),
+              ),
+            ],
+          );
+        });
+      },
+    );
+  }
+
+  void _showShareResult(String shareUrl) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('공유 링크가 준비됐어요'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('상담 선생님께 직접 보여드리거나 전달해 주세요. (7일 후 자동 만료)'),
+              const SizedBox(height: 10),
+              SelectableText(shareUrl, style: const TextStyle(fontSize: 14, color: Colors.blue)),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: shareUrl));
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('복사되었습니다')));
+                }
+              },
+              child: const Text('복사'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final uri = Uri.parse(shareUrl);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              },
+              child: const Text('열기'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('닫기'),
+            )
+          ],
+        );
+      },
     );
   }
 

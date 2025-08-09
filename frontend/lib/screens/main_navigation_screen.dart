@@ -127,9 +127,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       Expanded(
-                        child: _buildNavButton(
+                        child: _buildNavIconButton(
                           icon: Icons.home,
-                          label: '홈',
                           isSelected: false,
                           onTap: _onHomeTapped,
                           isTablet: isTablet,
@@ -137,9 +136,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         ),
                       ),
                       Expanded(
-                        child: _buildNavButton(
+                        child: _buildNavIconButton(
                           icon: Icons.analytics,
-                          label: '분석',
                           isSelected: _selectedIndex == 0,
                           onTap: () => _onItemTapped(0),
                           isTablet: isTablet,
@@ -160,9 +158,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         ),
                       ),
                       Expanded(
-                        child: _buildNavButton(
+                        child: _buildNavIconButton(
                           icon: Icons.eco,
-                          label: '정원',
                           isSelected: _selectedIndex == 1,
                           onTap: () => _onItemTapped(1),
                           isTablet: isTablet,
@@ -170,9 +167,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         ),
                       ),
                       Expanded(
-                        child: _buildNavButton(
+                        child: _buildNavIconButton(
                           icon: Icons.person,
-                          label: '내정보',
                           isSelected: _selectedIndex == 2,
                           onTap: () => _onItemTapped(2),
                           isTablet: isTablet,
@@ -225,6 +221,28 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavIconButton({
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required bool isTablet,
+    required bool isPhone,
+  }) {
+    final iconSize = isTablet ? 34.0 : (isPhone ? 26.0 : 30.0);
+    final padding = isTablet ? 12.0 : 8.0;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: padding),
+        child: Icon(
+          icon,
+          color: isSelected ? Colors.deepPurple : Colors.grey,
+          size: iconSize,
         ),
       ),
     );

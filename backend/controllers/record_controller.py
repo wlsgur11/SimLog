@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+import os
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict
 from pydantic import BaseModel
@@ -61,6 +62,103 @@ def create_record(
         raise HTTPException(status_code=409, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"감정 기록 생성 실패: {str(e)}")
+
+@router.get("/weekly/summary")
+def get_weekly_summary(
+    period: int = 7,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """최근 period일(기본 7일) 캐시된 요약 조회"""
+    from models.weekly_summary import WeeklySummaryCache
+    try:
+        cache = db.query(WeeklySummaryCache).filter(
+            WeeklySummaryCache.user_id == current_user.id,
+            WeeklySummaryCache.period_days == period
+        ).first()
+        if not cache:
+            return {"period": period, "items": [], "one_line_summary": "", "negative_ratio": 0.0}
+        return {
+            "period": cache.period_days,
+            "items": cache.items or [],
+            "one_line_summary": cache.one_line_summary or "",
+            "negative_ratio": cache.negative_ratio or 0.0,
+            "updated_at": cache.updated_at
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"주간 요약 조회 실패: {str(e)}")
+
+# ===== 테스트 전용: 주간 요약 시드 =====
+class WeeklySeedItem(BaseModel):
+    date: str  # YYYY-MM-DD
+    summary: str
+    primary_emotion: str
+
+class WeeklySeedPayload(BaseModel):
+    items: List[WeeklySeedItem]
+    period: int = 7
+    clear: bool = True
+
+@router.post("/weekly/seed-test")
+def seed_weekly_summary(
+    payload: WeeklySeedPayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """개발/테스트용: 최근 N일 요약 캐시 시드. 환경변수 SIMLOG_ENABLE_TEST=1 필요."""
+    if os.environ.get("SIMLOG_ENABLE_TEST") != "1":
+        raise HTTPException(status_code=403, detail="테스트 모드가 비활성화되어 있습니다.")
+
+    try:
+        from models.weekly_summary import WeeklySummaryCache
+        cache = db.query(WeeklySummaryCache).filter(
+            WeeklySummaryCache.user_id == current_user.id,
+            WeeklySummaryCache.period_days == payload.period
+        ).first()
+        if not cache:
+            cache = WeeklySummaryCache(
+                user_id=current_user.id,
+                period_days=payload.period,
+                items=[]
+            )
+            db.add(cache)
+
+        if payload.clear:
+            cache.items = []
+
+        items = list(cache.items or [])
+        for it in payload.items:
+            # 같은 날짜 교체
+            items = [x for x in items if x.get("date") != it.date]
+            items.append({
+                "date": it.date,
+                "summary": it.summary,
+                "primary_emotion": it.primary_emotion,
+            })
+        # 길이 제한
+        if len(items) > payload.period:
+            items = sorted(items, key=lambda x: x.get("date"))[-payload.period:]
+        cache.items = items
+
+        # 간단 지표 재계산
+        neg = {"우울", "슬픔", "분노", "혐오", "두려움", "불안", "짜증", "화남"}
+        total = len(items)
+        if total > 0:
+            neg_count = sum(1 for x in items if x.get("primary_emotion") in neg)
+            cache.negative_ratio = round(neg_count / total, 3)
+            summaries = [x.get("summary", "") for x in items if x.get("summary")]
+            cache.one_line_summary = " ".join(summaries[-3:])[:200]
+
+        db.commit()
+        db.refresh(cache)
+        return {
+            "period": cache.period_days,
+            "items": cache.items,
+            "negative_ratio": cache.negative_ratio,
+            "one_line_summary": cache.one_line_summary,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"시드 실패: {str(e)}")
 
 @router.get("/", response_model=List[RecordResponse])
 def get_records(

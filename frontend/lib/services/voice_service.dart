@@ -7,19 +7,14 @@ import 'package:permission_handler/permission_handler.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:async';
-import 'dart:js_interop';
-import 'dart:html' as html;
+import 'web_recorder.dart';
 
 class VoiceService {
   static const String baseUrl = 'http://localhost:8000';
   final AudioRecorder _audioRecorder = AudioRecorder();
+  final WebRecorder _webRecorder = WebRecorder();
   bool _isRecording = false;
   
-  // 웹용 음성 녹음 변수들
-  html.MediaRecorder? _mediaRecorder;
-  html.MediaStream? _mediaStream;
-  List<html.Blob> _recordedChunks = [];
-
   /// 마이크 권한 요청
   Future<bool> requestMicrophonePermission() async {
     final status = await Permission.microphone.request();
@@ -32,10 +27,12 @@ class VoiceService {
 
     try {
       if (kIsWeb) {
-        // 웹에서는 MediaRecorder API 사용
-        return await _startWebRecording();
+        // 웹에서는 MediaRecorder 래퍼 사용
+        final ok = await _webRecorder.start();
+        _isRecording = ok;
+        return ok;
       } else {
-        // 모바일에서는 record 패키지 사용
+        // 모바일/데스크탑에서는 record 패키지 사용
         final hasPermission = await requestMicrophonePermission();
         if (!hasPermission) {
           throw Exception('마이크 권한이 필요합니다.');
@@ -60,48 +57,19 @@ class VoiceService {
     }
   }
 
-  /// 웹에서 MediaRecorder를 사용한 녹음 시작
-  Future<bool> _startWebRecording() async {
-    try {
-      // 마이크 스트림 요청
-      _mediaStream = await html.window.navigator.mediaDevices!.getUserMedia({
-        'audio': {
-          'sampleRate': 16000,
-          'channelCount': 1,
-        }
-      });
-
-      _recordedChunks.clear();
-      
-      // MediaRecorder 생성
-      _mediaRecorder = html.MediaRecorder(_mediaStream!, {
-        'mimeType': 'audio/webm;codecs=opus'
-      });
-
-      // 데이터 수집 이벤트
-      _mediaRecorder!.addEventListener('dataavailable', (event) {
-        final blobEvent = event as html.BlobEvent;
-        if (blobEvent.data != null && blobEvent.data!.size > 0) {
-          _recordedChunks.add(blobEvent.data!);
-        }
-      });
-
-      // 녹음 시작
-      _mediaRecorder!.start();
-      _isRecording = true;
-      return true;
-    } catch (e) {
-      throw Exception('웹 녹음 시작 실패: $e');
-    }
-  }
-
   /// 음성 녹음 중지
   Future<String?> stopRecording() async {
     if (!_isRecording) return null;
 
     try {
       if (kIsWeb) {
-        return await _stopWebRecording();
+        final bytes = await _webRecorder.stop();
+        // 메모리 바이트를 Blob URL처럼 취급하기 위해 data URL 생성 대신 바로 서버로 보낼 것이므로
+        // 임시로 로컬 파일 경로 대신 식별용 가짜 경로를 반환하고, 상위에서 kIsWeb이면 바이트 경로를 따로 처리할 수도 있으나
+        // 기존 인터페이스를 유지하기 위해 bytes를 data URL 형태로 encoding 하여 전달
+        final dataUrl = 'data:audio/webm;base64,${base64Encode(bytes)}';
+        _isRecording = false;
+        return dataUrl;
       } else {
         final path = await _audioRecorder.stop();
         _isRecording = false;
@@ -110,33 +78,6 @@ class VoiceService {
     } catch (e) {
       _isRecording = false;
       throw Exception('녹음을 중지할 수 없습니다: $e');
-    }
-  }
-
-  /// 웹에서 MediaRecorder 녹음 중지
-  Future<String?> _stopWebRecording() async {
-    try {
-      if (_mediaRecorder == null) return null;
-
-      final completer = Completer<String?>();
-      
-      _mediaRecorder!.addEventListener('stop', (event) {
-        // 녹음된 데이터를 Blob으로 결합
-        final blob = html.Blob(_recordedChunks, 'audio/webm');
-        
-        // Blob URL 생성 (임시 파일 경로 역할)
-        final url = html.Url.createObjectUrl(blob);
-        completer.complete(url);
-      });
-
-      _mediaRecorder!.stop();
-      _mediaStream?.getTracks().forEach((track) => track.stop());
-      _isRecording = false;
-
-      return await completer.future;
-    } catch (e) {
-      _isRecording = false;
-      throw Exception('웹 녹음 중지 실패: $e');
     }
   }
 
@@ -149,10 +90,18 @@ class VoiceService {
     required String audioFilePath,
   }) async {
     try {
-      if (kIsWeb) {
-        return await _speechToTextWeb(accessToken: accessToken, blobUrl: audioFilePath);
+      if (kIsWeb && audioFilePath.startsWith('data:audio/webm;base64,')) {
+        // data URL에서 바이트 추출하여 업로드
+        final base64Part = audioFilePath.split(',').last;
+        final bytes = base64Decode(base64Part);
+        return await _uploadBytes(accessToken: accessToken, bytes: bytes, filename: 'audio.webm', contentType: MediaType('audio', 'webm'));
       } else {
-        return await _speechToTextMobile(accessToken: accessToken, audioFilePath: audioFilePath);
+        final file = File(audioFilePath);
+        if (!await file.exists()) {
+          throw Exception('오디오 파일을 찾을 수 없습니다.');
+        }
+        final bytes = await file.readAsBytes();
+        return await _uploadBytes(accessToken: accessToken, bytes: bytes, filename: 'audio.wav', contentType: MediaType('audio', 'wav'));
       }
     } catch (e) {
       return {
@@ -162,18 +111,12 @@ class VoiceService {
     }
   }
 
-  /// 모바일에서 파일 기반 음성인식
-  Future<Map<String, dynamic>> _speechToTextMobile({
+  Future<Map<String, dynamic>> _uploadBytes({
     required String accessToken,
-    required String audioFilePath,
+    required List<int> bytes,
+    required String filename,
+    required MediaType contentType,
   }) async {
-    final file = File(audioFilePath);
-    if (!await file.exists()) {
-      throw Exception('오디오 파일을 찾을 수 없습니다.');
-    }
-
-    final bytes = await file.readAsBytes();
-    
     final request = http.MultipartRequest(
       'POST',
       Uri.parse('$baseUrl/voice/stt'),
@@ -184,7 +127,8 @@ class VoiceService {
       http.MultipartFile.fromBytes(
         'audio_file',
         bytes,
-        filename: 'audio.wav',
+        filename: filename,
+        contentType: contentType,
       ),
     );
 
@@ -205,67 +149,6 @@ class VoiceService {
       };
     }
   }
-
-  /// 웹에서 Blob 기반 음성인식
-  Future<Map<String, dynamic>> _speechToTextWeb({
-    required String accessToken,
-    required String blobUrl,
-  }) async {
-    // Blob URL에서 실제 Blob 데이터 가져오기
-    final response = await html.HttpRequest.request(
-      blobUrl,
-      responseType: 'blob',
-    );
-    
-    final blob = response.response as html.Blob;
-    
-    // Blob을 Uint8List로 변환
-    final reader = html.FileReader();
-    final completer = Completer<Uint8List>();
-    
-    reader.onLoadEnd.listen((event) {
-      final result = reader.result as List<int>;
-      completer.complete(Uint8List.fromList(result));
-    });
-    
-    reader.readAsArrayBuffer(blob);
-    final bytes = await completer.future;
-    
-    // HTTP 요청 생성
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse('$baseUrl/voice/stt'),
-    );
-
-    request.headers['Authorization'] = 'Bearer $accessToken';
-    request.files.add(
-      http.MultipartFile.fromBytes(
-        'audio_file',
-        bytes,
-        filename: 'audio.webm',
-        contentType: MediaType('audio', 'webm'),
-      ),
-    );
-
-    final httpResponse = await request.send();
-    final responseBody = await httpResponse.stream.bytesToString();
-    final result = json.decode(responseBody);
-
-    if (httpResponse.statusCode == 200) {
-      return {
-        'success': true,
-        'text': result['text'] ?? '',
-        'confidence': result['confidence'] ?? 0.0,
-      };
-    } else {
-      return {
-        'success': false,
-        'error': result['detail'] ?? '음성인식에 실패했습니다.',
-      };
-    }
-  }
-
-
 
   /// 리소스 해제
   void dispose() {

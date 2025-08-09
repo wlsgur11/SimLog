@@ -36,8 +36,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.1.0
   # 음성입력 관련
-  record: ^5.0.4
+  record: ^6.0.0
   permission_handler: ^11.3.1
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:
@@ -105,18 +106,26 @@ flutter:
   # list giving the asset and other descriptors for the font. For
   # example:
   fonts:
-    - family: MaruBuri
+    - family: Pretendard
       fonts:
-        - asset: assets/fonts/MaruBuri-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/MaruBuri-Light.ttf
-          weight: 300
-        - asset: assets/fonts/MaruBuri-ExtraLight.ttf
+        - asset: assets/fonts/Pretendard-Thin.otf
+          weight: 100
+        - asset: assets/fonts/Pretendard-ExtraLight.otf
           weight: 200
-        - asset: assets/fonts/MaruBuri-SemiBold.ttf
+        - asset: assets/fonts/Pretendard-Light.otf
+          weight: 300
+        - asset: assets/fonts/Pretendard-Regular.otf
+          weight: 400
+        - asset: assets/fonts/Pretendard-Medium.otf
+          weight: 500
+        - asset: assets/fonts/Pretendard-SemiBold.otf
           weight: 600
-        - asset: assets/fonts/MaruBuri-Bold.ttf
+        - asset: assets/fonts/Pretendard-Bold.otf
           weight: 700
+        - asset: assets/fonts/Pretendard-ExtraBold.otf
+          weight: 800
+        - asset: assets/fonts/Pretendard-Black.otf
+          weight: 900
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package

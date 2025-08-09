@@ -197,6 +197,11 @@ class _HelpScreenState extends State<HelpScreen> with TickerProviderStateMixin {
                       title: '버그 신고',
                       description: '앱에서 문제가 발생하면 버그 신고를 해주세요.',
                     ),
+                    _buildHelpItem(
+                      icon: Icons.mark_email_unread,
+                      title: '버그/건의 메일',
+                      description: '버그나 건의사항은 octopus121@pusan.ac.kr 로 메일을 보내주세요.',
+                    ),
                   ],
                 ),
               ],

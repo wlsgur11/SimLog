@@ -447,7 +447,7 @@ class GardenService:
     def _get_item_layer(item_name: str) -> int:
         """아이템 이름을 기반으로 레이어를 결정"""
         # 배경 아이템들 (레이어 0)
-        background_items = ['잔디', '모래', '흙', '돌', '자갈']
+        background_items = ['잔디', '모래', '흙']
         for bg_item in background_items:
             if bg_item in item_name:
                 return 0
@@ -457,12 +457,23 @@ class GardenService:
         for water_item in water_items:
             if water_item in item_name:
                 return 1
-        
-        # 장식 아이템들 (레이어 1)
-        decoration_items = ['울타리', '다리', '벤치', '등불', '문', '연못 테두리']
-        for dec_item in decoration_items:
-            if dec_item in item_name:
+
+        # 돌담/벽돌 류는 "중간(1)"으로 고정
+        mid_decors = ['돌담', '벽돌', '원형 벽돌']
+        for mid in mid_decors:
+            if mid in item_name:
                 return 1
+        
+        # 장식 아이템들: 기본적으로 연못(1) 위에서 보여야 하는 경우가 많음
+        # 울타리, 다리 등은 레이어 2로 분류 (돌담/벽돌 류는 위에서 1로 처리)
+        decoration_items_front = ['울타리', '다리', '벤치', '등불', '문']
+        for dec_item in decoration_items_front:
+            if dec_item in item_name:
+                return 2
+
+        # 연못 테두리는 물의 일부로 간주하여 레이어 1 유지
+        if '연못 테두리' in item_name:
+            return 1
         
         # 식물 아이템들 (레이어 2) - 연못 위에 배치 가능
         plant_items = ['꽃', '나무', '부시', '채소', '연꽃', '토마토', '딸기', '당근', '양파', '마늘', '오이', '무']

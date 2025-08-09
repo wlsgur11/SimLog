@@ -71,6 +71,75 @@ class EmotionColorService:
         9: {"brightness": 0.55, "saturation": 1.0},
         10: {"brightness": 0.5, "saturation": 1.0}
     }
+
+    # 감정의 바퀴 순서 (시계방향)
+    WHEEL_ORDER = ["기쁨", "신뢰", "두려움", "놀람", "슬픔", "혐오", "분노", "기대"]
+
+    # 2차 감정(Secondary dyads) 한글 라벨
+    DYAD_LABELS = {
+        ("기쁨", "신뢰"): "사랑",
+        ("신뢰", "두려움"): "순종",
+        ("두려움", "놀람"): "경외",
+        ("놀람", "슬픔"): "실망",
+        ("슬픔", "혐오"): "후회",
+        ("혐오", "분노"): "경멸",
+        ("분노", "기대"): "공격성",
+        ("기대", "기쁨"): "낙관",
+    }
+
+    @staticmethod
+    def _mix_rgb(rgb_a: tuple, rgb_b: tuple, wa: float = 0.5) -> tuple:
+        wb = 1.0 - wa
+        return (
+            int(rgb_a[0] * wa + rgb_b[0] * wb),
+            int(rgb_a[1] * wa + rgb_b[1] * wb),
+            int(rgb_a[2] * wa + rgb_b[2] * wb),
+        )
+
+    @staticmethod
+    def _build_extended_palette(intensity: int) -> Dict[str, Dict]:
+        """플루치크 팔레트 확장: 8가지 기본 + 8가지 2차 감정(이웃 혼합)."""
+        intensity = max(1, min(10, intensity))
+        base = {
+            emotion: EmotionColorService._get_color_with_intensity(emotion, intensity)
+            for emotion in EmotionColorService.WHEEL_ORDER
+        }
+
+        # 기본
+        palette: Dict[str, Dict] = {name: info for name, info in base.items()}
+
+        # 이웃 혼합(Secondary dyads)
+        n = len(EmotionColorService.WHEEL_ORDER)
+        for i, emo in enumerate(EmotionColorService.WHEEL_ORDER):
+            nxt = EmotionColorService.WHEEL_ORDER[(i + 1) % n]
+            label = EmotionColorService.DYAD_LABELS.get((emo, nxt)) or EmotionColorService.DYAD_LABELS.get((nxt, emo))
+            if not label:
+                continue
+            rgb = EmotionColorService._mix_rgb(base[emo]["rgb"], base[nxt]["rgb"], 0.5)
+            palette[label] = {
+                "name": label,
+                "hex": "#{:02x}{:02x}{:02x}".format(*rgb),
+                "rgb": rgb,
+                "description": f"{emo}+{nxt} 조합 색",
+                "intensity": intensity,
+            }
+
+        return palette
+
+    @staticmethod
+    def _find_closest_from_palette(rgb: tuple, palette: Dict[str, Dict]) -> str:
+        best_name = None
+        best_dist = float("inf")
+        for name, info in palette.items():
+            prgb = info.get("rgb")
+            if not prgb:
+                continue
+            dist = sum((a - b) ** 2 for a, b in zip(rgb, prgb))
+            if dist < best_dist:
+                best_dist = dist
+                best_name = name
+        # 안전장치: 없으면 기쁨
+        return best_name or "기쁨"
     
     @staticmethod
     def get_emotion_colors() -> Dict:
@@ -176,46 +245,51 @@ class EmotionColorService:
     @staticmethod
     def get_average_emotion_color(emotion_records: List[Dict]) -> Dict:
         """
-        여러 감정 기록의 평균 색상 계산
-        (일주일, 이주일, 한달간 통계용)
+        대표 감정색은 플루치크 팔레트(기본 8감정 + 인접 2차 감정 조합)에서 선택한다.
+        - 기록들의 평균 RGB를 계산
+        - 평균 강도를 계산
+        - 평균 강도로 생성한 확장 팔레트에서 평균 RGB와 가장 가까운 색을 선택
         """
         if not emotion_records:
             return EmotionColorService._get_color_with_intensity("기쁨", 5)
-        
-        # RGB 값들의 평균 계산
-        total_r = sum(record["color"]["rgb"][0] for record in emotion_records)
-        total_g = sum(record["color"]["rgb"][1] for record in emotion_records)
-        total_b = sum(record["color"]["rgb"][2] for record in emotion_records)
-        
-        count = len(emotion_records)
+
+        # 평균 RGB
+        rgbs = [tuple(rec.get("color", {}).get("rgb", ())) for rec in emotion_records]
+        rgbs = [rgb for rgb in rgbs if isinstance(rgb, (list, tuple)) and len(rgb) == 3]
+        if not rgbs:
+            # 색 정보가 없으면 기본 로직으로 폴백
+            return EmotionColorService._get_color_with_intensity("기쁨", 5)
+        total_r = sum(rgb[0] for rgb in rgbs)
+        total_g = sum(rgb[1] for rgb in rgbs)
+        total_b = sum(rgb[2] for rgb in rgbs)
+        count = len(rgbs)
         avg_rgb = (int(total_r / count), int(total_g / count), int(total_b / count))
-        avg_hex = "#{:02x}{:02x}{:02x}".format(*avg_rgb)
-        
-        # 가장 가까운 감정 찾기
-        closest_emotion = EmotionColorService._find_closest_emotion(avg_rgb)
-        
-        # 평균 색상의 특성 분석
-        avg_intensity = sum(record.get("intensity", 5) for record in emotion_records) / count
-        
-        # AI가 생성한 색상 이름 시도
-        try:
-            from services.ai_analysis_service import AIAnalysisService
-            ai_color_name = AIAnalysisService.generate_average_color_name_with_gpt(emotion_records)
-            if ai_color_name and ai_color_name != "평균 감정색":
-                color_name = ai_color_name
-            else:
-                color_name = EmotionColorService._generate_average_color_name(avg_rgb, closest_emotion, avg_intensity)
-        except:
-            color_name = EmotionColorService._generate_average_color_name(avg_rgb, closest_emotion, avg_intensity)
-        
+
+        # 평균 강도
+        intensities = []
+        for rec in emotion_records:
+            color = rec.get("color", {})
+            intensity = color.get("intensity", rec.get("intensity", 5))
+            try:
+                intensities.append(int(intensity))
+            except Exception:
+                intensities.append(5)
+        avg_intensity = int(round(sum(intensities) / len(intensities))) if intensities else 5
+        avg_intensity = max(1, min(10, avg_intensity))
+
+        # 확장 팔레트에서 가장 가까운 색 선택
+        palette = EmotionColorService._build_extended_palette(avg_intensity)
+        chosen_name = EmotionColorService._find_closest_from_palette(avg_rgb, palette)
+        chosen = palette[chosen_name]
+
         return {
-            "name": color_name,
-            "hex": avg_hex,
-            "rgb": avg_rgb,
-            "description": f"지난 {count}일간의 평균 감정을 나타내는 색입니다.",
+            "name": chosen["name"],
+            "hex": chosen["hex"],
+            "rgb": chosen["rgb"],
+            "description": f"지난 {count}일간의 대표 감정색입니다.",
             "period": count,
-            "closest_emotion": closest_emotion,
-            "average_intensity": round(avg_intensity, 1)
+            "closest_emotion": chosen_name,
+            "average_intensity": float(avg_intensity),
         }
     
     @staticmethod

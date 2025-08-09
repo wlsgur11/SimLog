@@ -58,7 +58,71 @@ class RecordService:
         
         db.commit()
         db.refresh(record)
+        # 주간 요약 캐시 갱신
+        try:
+            RecordService._update_weekly_cache_after_create(
+                db=db,
+                user_id=user_id,
+                ai_summary=ai_summary,
+                emotion_analysis=emotion_analysis,
+                period_days=7
+            )
+        except Exception:
+            pass
         return record
+
+    @staticmethod
+    def _update_weekly_cache_after_create(db: Session, user_id: int, ai_summary: str, emotion_analysis: Dict, period_days: int = 7) -> None:
+        from datetime import date
+        from models.weekly_summary import WeeklySummaryCache
+
+        # 항목 구성
+        primary_emotion = None
+        try:
+            primary_emotion = emotion_analysis.get("primary_emotion") if emotion_analysis else None
+        except Exception:
+            primary_emotion = None
+
+        item = {
+            "date": date.today().isoformat(),
+            "summary": ai_summary or "",
+            "primary_emotion": primary_emotion or ""
+        }
+
+        cache = db.query(WeeklySummaryCache).filter(
+            WeeklySummaryCache.user_id == user_id,
+            WeeklySummaryCache.period_days == period_days
+        ).first()
+
+        if not cache:
+            cache = WeeklySummaryCache(
+                user_id=user_id,
+                period_days=period_days,
+                items=[item]
+            )
+            db.add(cache)
+        else:
+            items = list(cache.items or [])
+            # 같은 날짜 항목이 있으면 교체, 없으면 push
+            items = [it for it in items if it.get("date") != item["date"]]
+            items.append(item)
+            # 길이 제한
+            if len(items) > period_days:
+                items = items[-period_days:]
+            cache.items = items
+
+        # 간단한 부정 비율/한줄 합성
+        items = cache.items or []
+        neg_emotions = {"우울", "슬픔", "분노", "혐오", "두려움", "불안", "짜증", "화남"}
+        total = len(items)
+        if total > 0:
+            neg_count = sum(1 for it in items if it.get("primary_emotion") in neg_emotions)
+            cache.negative_ratio = round(neg_count / total, 3)
+            # 간단 합성: 최근 요약 2~3개를 연결
+            summaries = [it.get("summary", "") for it in items if it.get("summary")]
+            cache.one_line_summary = " ".join(summaries[-3:])[:200]
+
+        db.commit()
     
     @staticmethod
     def get_user_records(db: Session, user_id: int, skip: int = 0, limit: int = 100) -> List[Record]:
@@ -128,6 +192,17 @@ class RecordService:
         
         db.commit()
         db.refresh(record)
+        # 내용 변경 시 주간 캐시도 업데이트
+        try:
+            RecordService._update_weekly_cache_after_create(
+                db=db,
+                user_id=user_id,
+                ai_summary=record.ai_summary,
+                emotion_analysis=record.emotion_analysis,
+                period_days=7
+            )
+        except Exception:
+            pass
         return record
     
     @staticmethod

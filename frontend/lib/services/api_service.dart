@@ -4,6 +4,69 @@ import 'package:http/http.dart' as http;
 class ApiService {
   // TODO: 실제 서버 주소로 변경
   static const String baseUrl = 'http://localhost:8000';
+  // ===== Reports & Alerts =====
+  static Future<Map<String, dynamic>> getConsent({required String accessToken}) async {
+    final url = Uri.parse('$baseUrl/reports/consent');
+    final response = await http.get(url, headers: {'Authorization': 'Bearer $accessToken'});
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('동의 상태 조회 실패');
+    }
+  }
+
+  static Future<Map<String, dynamic>> setConsent({required String accessToken, required bool consented}) async {
+    final url = Uri.parse('$baseUrl/reports/consent');
+    final response = await http.post(
+      url,
+      headers: {'Authorization': 'Bearer $accessToken', 'Content-Type': 'application/json'},
+      body: jsonEncode({'consented': consented}),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('동의 설정 실패');
+    }
+  }
+
+  static Future<Map<String, dynamic>> createWeeklyShare({required String accessToken}) async {
+    final url = Uri.parse('$baseUrl/reports/weekly/share');
+    final response = await http.post(url, headers: {'Authorization': 'Bearer $accessToken'});
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final body = jsonDecode(response.body);
+      throw Exception(body['detail'] ?? '공유 링크 생성 실패');
+    }
+  }
+
+  static Future<Map<String, dynamic>> getWeeklySummary({required String accessToken, int period = 7}) async {
+    final url = Uri.parse('$baseUrl/records/weekly/summary?period=$period');
+    final response = await http.get(url, headers: {'Authorization': 'Bearer $accessToken'});
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('주간 요약 조회 실패');
+    }
+  }
+
+  static Future<Map<String, dynamic>> checkAlert({required String accessToken}) async {
+    final url = Uri.parse('$baseUrl/alerts/check');
+    final response = await http.get(url, headers: {'Authorization': 'Bearer $accessToken'});
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('알림 체크 실패');
+    }
+  }
+
+  static Future<void> ackAlert({required String accessToken}) async {
+    final url = Uri.parse('$baseUrl/alerts/ack');
+    final response = await http.post(url, headers: {'Authorization': 'Bearer $accessToken'});
+    if (response.statusCode != 200) {
+      throw Exception('알림 확인 처리 실패');
+    }
+  }
 
   static Future<Map<String, dynamic>> signup({
     required String email,

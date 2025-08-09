@@ -44,6 +44,25 @@ class VoiceService:
             # 변환 실패 시 원본 데이터 반환
             return audio_data
 
+    def _map_language(self, language: str) -> str:
+        """클로바 STT 언어 코드로 매핑 (STT005 방지)"""
+        lang = (language or "").lower()
+        mapping = {
+            "ko": "Kor",
+            "ko-kr": "Kor",
+            "kor": "Kor",
+            "en": "Eng",
+            "en-us": "Eng",
+            "eng": "Eng",
+            "ja": "Jpn",
+            "ja-jp": "Jpn",
+            "jpn": "Jpn",
+            "zh": "Chn",
+            "zh-cn": "Chn",
+            "chn": "Chn",
+        }
+        return mapping.get(lang, "Kor")
+    
     def speech_to_text(self, audio_data: bytes, language: str = "ko") -> Dict:
         """음성 데이터를 텍스트로 변환"""
         if not self.client_id or not self.client_secret:
@@ -53,24 +72,23 @@ class VoiceService:
             }
         
         try:
-            # Clova STT API URL과 파라미터 설정
+            # 언어 매핑
+            clova_lang = self._map_language(language)
             params = {
-                "lang": language,
-                "completion": "sync"  # 동기 처리
+                "lang": clova_lang
             }
             
-            # Clova STT API는 오디오 데이터를 직접 전송
             headers = {
                 "X-NCP-APIGW-API-KEY-ID": self.client_id,
                 "X-NCP-APIGW-API-KEY": self.client_secret,
                 "Content-Type": "application/octet-stream"
             }
             
-            logging.info(f"Clova STT 요청: {self.stt_url}")
-            logging.info(f"파라미터: {params}")
-            logging.info(f"오디오 데이터 크기: {len(audio_data)} bytes")
+            # 디버깅용 로그 제거 (필요 시만 활성화)
+            # logging.info(f"Clova STT 요청: {self.stt_url}")
+            # logging.info(f"파라미터: {params}")
+            # logging.info(f"오디오 데이터 크기: {len(audio_data)} bytes")
             
-            # 오디오 데이터를 직접 전송
             response = requests.post(
                 self.stt_url,
                 headers=headers,
@@ -78,12 +96,12 @@ class VoiceService:
                 data=audio_data
             )
             
-            logging.info(f"Clova STT 응답 상태: {response.status_code}")
-            logging.info(f"Clova STT 응답 내용: {response.text}")
+            # 상세 응답 로그 제거
+            # logging.info(f"Clova STT 응답 상태: {response.status_code}")
+            # logging.info(f"Clova STT 응답 내용: {response.text}")
             
             if response.status_code == 200:
                 result = response.json()
-                logging.info(f"STT 결과: {result}")
                 return {
                     "success": True,
                     "text": result.get("text", ""),

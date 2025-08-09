@@ -4,6 +4,7 @@ import 'edit_profile_screen.dart';
 import 'app_settings_screen.dart';
 import 'notification_settings_screen.dart';
 import 'help_screen.dart';
+import 'mind_check_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? nickname;
@@ -255,6 +256,17 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const NotificationSettingsScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildSettingsTile(
+            icon: Icons.favorite,
+            title: '마음 체크하기',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => MindCheckScreen(accessToken: widget.accessToken)),
               );
             },
           ),

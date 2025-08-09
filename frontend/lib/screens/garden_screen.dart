@@ -1183,36 +1183,8 @@ class GardenScreenState extends State<GardenScreen> {
                                                 color: Colors.green,
                                               ),
                                             ),
-                                            const SizedBox(width: 8),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                              decoration: BoxDecoration(
-                                                color: _getRarityColor(rarity),
-                                                borderRadius: BorderRadius.circular(3),
-                                              ),
-                                              child: Text(
-                                                _getRarityText(rarity),
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 8,
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                              decoration: BoxDecoration(
-                                                color: _getLayerColor(item['layer'] ?? 1),
-                                                borderRadius: BorderRadius.circular(3),
-                                              ),
-                                              child: Text(
-                                                _getLayerName(item['layer'] ?? 1),
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 8,
-                                                ),
-                                              ),
-                                            ),
+                                            // 상점 카드에서는 희귀도 배지 숨김 처리
+                                            // 상점 카드에서는 레이어 표시는 숨김 처리
                                           ],
                                         ),
                                       ],
@@ -2070,7 +2042,7 @@ class GardenScreenState extends State<GardenScreen> {
       case 0:
         return '배경';
       case 1:
-        return '물/중간';
+        return '중간';
       case 2:
         return '식물';
       case 3:
