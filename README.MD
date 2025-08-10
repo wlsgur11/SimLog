@@ -72,6 +72,106 @@
 
 ## 🏗 프로젝트 구조
 
+### 📊 시스템 아키텍처
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        A[📱 Flutter App<br/>Mobile/Web/Desktop]
+        B[🌐 Web Browser<br/>Chrome/Safari/Firefox]
+    end
+    
+    subgraph "Public Subnet"
+        subgraph "EC2 Instance"
+            C[🐳 Docker Container]
+            D[🚀 FastAPI Backend<br/>Python + Uvicorn]
+            E[🔒 JWT Authentication]
+            F[🤖 AI Analysis Service<br/>GPT-4o mini]
+            G[🎤 Voice Recognition<br/>Clova STT]
+        end
+        
+        H[☁️ Amazon S3<br/>Garden Images<br/>User Assets]
+    end
+    
+    subgraph "Private Subnet"
+        I[🗄️ Amazon RDS<br/>MySQL Database]
+    end
+    
+    subgraph "External Services"
+        J[🧠 OpenAI API<br/>GPT-4o mini]
+        K[🎵 Naver Clova<br/>Speech-to-Text]
+    end
+    
+    %% Client connections
+    A -->|API Requests| D
+    A -->|Upload Images| H
+    B -->|Web App| D
+    B -->|Static Assets| H
+    
+    %% Backend connections
+    D -->|User Auth| E
+    D -->|AI Analysis| F
+    D -->|Voice Processing| G
+    D -->|Data CRUD| I
+    D -->|Image Management| H
+    
+    %% External API connections
+    F -->|Text Analysis| J
+    G -->|STT Processing| K
+    
+    %% Database connections
+    I -->|User Data| D
+    I -->|Garden Items| D
+    I -->|Emotion Records| D
+    
+    %% Styling
+    classDef client fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef public fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef private fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    classDef external fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    
+    class A,B client
+    class C,D,E,F,G,H public
+    class I private
+    class J,K external
+```
+
+### 🔄 데이터 흐름도
+
+```mermaid
+sequenceDiagram
+    participant U as 👤 User
+    participant F as 📱 Flutter App
+    participant B as 🚀 FastAPI Backend
+    participant AI as 🤖 OpenAI GPT-4o
+    participant STT as 🎤 Clova STT
+    participant DB as 🗄️ MySQL DB
+    participant S3 as ☁️ S3 Storage
+
+    Note over U,S3: 감정 기록 프로세스
+    
+    U->>F: 음성/텍스트 입력
+    F->>STT: 음성 파일 전송 (WebM/WAV)
+    STT-->>F: 텍스트 변환 결과
+    F->>B: 감정 기록 요청 + 텍스트
+    B->>AI: 텍스트 분석 요청
+    AI-->>B: 감정 분석 결과
+    B->>DB: 감정 기록 저장
+    B->>S3: 정원 이미지 저장 (필요시)
+    B-->>F: 분석 결과 + 씨앗 지급
+    F-->>U: 감정 기록 완료
+
+    Note over U,S3: 정원 시스템
+    
+    U->>F: 정원 아이템 배치
+    F->>B: 아이템 배치 요청
+    B->>DB: 정원 상태 업데이트
+    B-->>F: 배치 완료 확인
+    F-->>U: 정원 업데이트 표시
+```
+
+### 📁 폴더 구조
+
 ```
 SimLog/
 ├── backend/                 # FastAPI 백엔드
