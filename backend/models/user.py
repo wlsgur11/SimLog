@@ -15,7 +15,7 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # 씨앗(화폐) 시스템
-    seeds = Column(Integer, default=10)  # 기본 씨앗 10개
+    seeds = Column(Integer, default=200)  # 기본 씨앗 200개
     last_attendance_date = Column(DateTime, nullable=True)  # 마지막 출석 날짜
     attendance_streak = Column(Integer, default=0)  # 연속 출석 일수
     

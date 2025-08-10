@@ -34,7 +34,17 @@ class GardenService:
         
         # 씨앗 지급 (기본 2개 + 연속 출석 보너스)
         base_seeds = 2
-        streak_bonus = min(user.attendance_streak // 3, 3)  # 3일마다 추가 보너스, 최대 3개
+        # 2, 4, 6일 연속 출석 시 추가 보너스
+        streak_bonus = 0
+        if user.attendance_streak == 2:
+            streak_bonus = 2
+        elif user.attendance_streak == 4:
+            streak_bonus = 4
+        elif user.attendance_streak == 6:
+            streak_bonus = 6
+        elif user.attendance_streak >= 7:
+            streak_bonus = 8  # 7일 이상 연속 출석 시 최대 보너스
+        
         weekly_bonus = 5 if user.attendance_streak % 7 == 0 else 0  # 7일마다 특별 보너스
         seeds_earned = base_seeds + streak_bonus + weekly_bonus
         

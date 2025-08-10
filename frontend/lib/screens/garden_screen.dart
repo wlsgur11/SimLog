@@ -1081,7 +1081,8 @@ class GardenScreenState extends State<GardenScreen> {
     if (['토마토', '딸기', '당근', '양파', '마늘', '오이', '체리 토마토', '무'].any((veggie) => itemName.contains(veggie))) return '채소';
     if (itemName.contains('돌담') || itemName.contains('벽돌')) return '장식';
     if (itemName.contains('배경')) return '배경';
-    return '기타';
+    // 기타 카테고리 제거 - 모든 아이템이 명확한 카테고리를 가지도록 함
+    return '장식';
   }
 
   Widget _buildShopTab() {
@@ -1737,8 +1738,10 @@ class GardenScreenState extends State<GardenScreen> {
       }
     }
     // 나무 다리의 경우 방향별 이미지
-    else if (item.item_name.contains('나무 다리')) {
-
+    else if (item.item_name.contains('다리')) {
+      print('다리 방향 선택: $variant'); // 디버깅용 로그 추가
+      print('다리 아이템 이름: ${item.item_name}'); // 추가 디버깅
+      
       if (variant == 'horizontal') {
         imagePath = 'assets/images/garden/bridge/bridge_horizontal.png';
       } else if (variant == 'vertical') {
@@ -1759,6 +1762,15 @@ class GardenScreenState extends State<GardenScreen> {
         imagePath = 'assets/images/garden/bridge/bridge_top_short.png';
       } else if (variant == 'bottom_short') {
         imagePath = 'assets/images/garden/bridge/bridge_bottom_short.png';
+      }
+      
+      print('다리 이미지 경로: $imagePath'); // 디버깅용 로그 추가
+      
+      // 이미지 경로가 설정되었는지 확인
+      if (imagePath != null) {
+        print('다리 이미지 경로 설정 완료: $imagePath');
+      } else {
+        print('다리 이미지 경로 설정 실패');
       }
     }
     // 연못의 경우 위치별 이미지
@@ -1864,13 +1876,17 @@ class GardenScreenState extends State<GardenScreen> {
 
     
     if (imagePath != null) {
+      print('이미지 로드 시도: $imagePath'); // 디버깅용 로그 추가
       return Image.asset(
         imagePath,
         width: 40,
         height: 40,
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) {
-          return Icon(Icons.image_not_supported, size: 20);
+          // 이미지 로드 실패 시 기본 아이콘 사용
+          print('이미지 로드 실패: $imagePath, 오류: $error');
+          print('스택 트레이스: $stackTrace');
+          return Icon(Icons.rotate_right, size: 20);
         },
       );
     }
