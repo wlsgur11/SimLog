@@ -72,69 +72,28 @@
 
 ## 🏗 프로젝트 구조
 
-### 📊 시스템 아키텍처
+### 📊 시스템 구성 요소
 
-```mermaid
-graph TB
-    subgraph "Client Layer"
-        A[📱 Flutter App<br/>Mobile/Web/Desktop]
-        B[🌐 Web Browser<br/>Chrome/Safari/Firefox]
-    end
-    
-    subgraph "Public Subnet"
-        subgraph "EC2 Instance"
-            C[🐳 Docker Container]
-            D[🚀 FastAPI Backend<br/>Python + Uvicorn]
-            E[🔒 JWT Authentication]
-            F[🤖 AI Analysis Service<br/>GPT-4o mini]
-            G[🎤 Voice Recognition<br/>Clova STT]
-        end
-        
-        H[☁️ Amazon S3<br/>Garden Images<br/>User Assets]
-    end
-    
-    subgraph "Private Subnet"
-        I[🗄️ Amazon RDS<br/>MySQL Database]
-    end
-    
-    subgraph "External Services"
-        J[🧠 OpenAI API<br/>GPT-4o mini]
-        K[🎵 Naver Clova<br/>Speech-to-Text]
-    end
-    
-    %% Client connections
-    A -->|API Requests| D
-    A -->|Upload Images| H
-    B -->|Web App| D
-    B -->|Static Assets| H
-    
-    %% Backend connections
-    D -->|User Auth| E
-    D -->|AI Analysis| F
-    D -->|Voice Processing| G
-    D -->|Data CRUD| I
-    D -->|Image Management| H
-    
-    %% External API connections
-    F -->|Text Analysis| J
-    G -->|STT Processing| K
-    
-    %% Database connections
-    I -->|User Data| D
-    I -->|Garden Items| D
-    I -->|Emotion Records| D
-    
-    %% Styling
-    classDef client fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef public fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
-    classDef private fill:#ffcdd2,stroke:#c62828,stroke-width:2px
-    classDef external fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
-    
-    class A,B client
-    class C,D,E,F,G,H public
-    class I private
-    class J,K external
-```
+SimLog는 다음과 같은 시스템 구성으로 되어 있습니다:
+
+#### 🏗️ **아키텍처 레이어**
+- **Client Layer**: Flutter 앱 (모바일/웹/데스크탑)
+- **API Gateway**: FastAPI 백엔드 (Python + Uvicorn)
+- **Data Layer**: MySQL 데이터베이스
+- **External APIs**: OpenAI GPT-4o, Naver Clova STT
+
+#### 🔧 **주요 컴포넌트**
+- **Frontend**: Flutter 크로스 플랫폼 앱
+- **Backend**: FastAPI REST API 서버
+- **Database**: MySQL (사용자, 감정기록, 정원시스템)
+- **AI Service**: GPT-4o mini 감정 분석
+- **Voice Service**: Clova STT 음성인식
+- **Storage**: 정원 이미지 및 사용자 에셋
+
+#### 🌐 **네트워크 구성**
+- **Public**: API 서버, 웹 앱 접근
+- **Private**: 데이터베이스, 내부 서비스
+- **External**: OpenAI, Naver Clova API 연동
 
 ### 🔄 데이터 흐름도
 
