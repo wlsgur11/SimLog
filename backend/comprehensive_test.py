@@ -10,6 +10,40 @@ import time
 # Railway 백엔드 URL
 BASE_URL = "https://simlog-production.up.railway.app"
 
+def create_developer_account():
+    """개발자 계정 생성 (테스트용)"""
+    print("\n=== 0. 개발자 계정 생성 ===")
+    
+    developer_data = {
+        "email": "developer@simlog.com",
+        "password": "developer123",
+        "nickname": "개발자"
+    }
+    
+    try:
+        response = requests.post(
+            f"{BASE_URL}/auth/signup",
+            json=developer_data,
+            headers={"Content-Type": "application/json"}
+        )
+        
+        print(f"Status: {response.status_code}")
+        print(f"Response: {response.text}")
+        
+        if response.status_code == 200:
+            print("✅ 개발자 계정 생성 성공!")
+            return True
+        elif response.status_code == 400 and "이미 사용 중인" in response.text:
+            print("ℹ️ 개발자 계정이 이미 존재합니다.")
+            return True
+        else:
+            print("❌ 개발자 계정 생성 실패")
+            return False
+            
+    except Exception as e:
+        print(f"❌ 오류: {e}")
+        return False
+
 def test_health():
     """기본 헬스체크 테스트"""
     print("=== 1. 헬스체크 테스트 ===")
@@ -31,16 +65,18 @@ def test_signup():
     """회원가입 테스트"""
     print("\n=== 2. 회원가입 테스트 ===")
     
+    # 고유한 타임스탬프 기반 테스트 데이터
+    timestamp = int(time.time())
     test_users = [
         {
-            "email": f"test{int(time.time())}@example.com",
+            "email": f"test{timestamp}@example.com",
             "password": "testpassword123",
-            "nickname": "테스트사용자"
+            "nickname": f"테스트사용자{timestamp}"
         },
         {
-            "email": f"test{int(time.time())+1}@example.com",
+            "email": f"test{timestamp+1}@example.com",
             "password": "123456",
-            "nickname": "테스트2"
+            "nickname": f"테스트{timestamp+1}"
         }
     ]
     
@@ -195,6 +231,9 @@ def main():
     print("🚀 SimLog API 종합 테스트 시작!")
     print(f"Base URL: {BASE_URL}")
     print("=" * 50)
+    
+    # 0. 개발자 계정 생성
+    create_developer_account()
     
     # 1. 헬스체크
     if not test_health():

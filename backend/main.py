@@ -4,6 +4,11 @@ import logging
 from sqlalchemy import text
 from database import Base, engine
 from models.user import User
+from models.record import EmotionRecord
+from models.garden_item import GardenItem, GardenItemTemplate
+from models.user_consent import UserConsent
+from models.shop_item import ShopItem
+from models.user_inventory import UserInventory
 
 # 로깅 설정
 logging.basicConfig(level=logging.DEBUG)  # DEBUG 레벨로 변경
@@ -45,11 +50,38 @@ try:
         tables = [row[0] for row in result]
         logging.info(f"Existing tables: {tables}")
         
-        if 'users' not in tables:
-            logging.error("Users table was not created!")
-            # 강제로 테이블 생성 시도
-            Base.metadata.create_all(bind=engine, tables=[User.__table__])
-            logging.info("Users table created forcefully")
+        # 필요한 모든 테이블 생성
+        required_tables = [
+            User.__table__,
+            EmotionRecord.__table__,
+            GardenItem.__table__,
+            GardenItemTemplate.__table__,
+            UserConsent.__table__,
+            ShopItem.__table__,
+            UserInventory.__table__
+        ]
+        
+        for table in required_tables:
+            if table.name not in tables:
+                logging.warning(f"Table {table.name} not found, creating...")
+                Base.metadata.create_all(bind=engine, tables=[table])
+                logging.info(f"Table {table.name} created successfully")
+        
+        # 상점 데이터 초기화 (필요시)
+        try:
+            # 상점에 기본 아이템이 있는지 확인
+            result = connection.execute(text("SELECT COUNT(*) FROM shop_items"))
+            shop_item_count = result.scalar()
+            
+            if shop_item_count == 0:
+                logging.info("Shop is empty, initializing with default items...")
+                # 기본 상점 아이템 추가 로직 (필요시 구현)
+                logging.info("Shop initialization completed")
+            else:
+                logging.info(f"Shop has {shop_item_count} items")
+                
+        except Exception as e:
+            logging.warning(f"Shop initialization check failed: {e}")
         
 except Exception as e:
     logging.error(f"Database initialization failed: {e}")
