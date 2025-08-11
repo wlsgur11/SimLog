@@ -64,17 +64,76 @@ class ReportService:
             WeeklySummaryCache.period_days == period_days
         ).first()
 
-        if not cache or not cache.items:
-            raise ValueError("최근 요약 데이터가 없습니다.")
+        # 1) 캐시에 데이터가 있으면 그대로 사용
+        if cache and cache.items:
+            items = cache.items
+            one_line_summary = cache.one_line_summary or ""
+            negative_ratio = cache.negative_ratio or 0.0
+        else:
+            # 2) 캐시가 없거나 비어 있으면 최근 period_days 내 기록으로 즉석 요약 생성
+            from datetime import datetime, timedelta
+            from models.record import Record
+
+            end_dt = datetime.now()
+            start_dt = end_dt - timedelta(days=period_days)
+
+            records = (
+                db.query(Record)
+                .filter(
+                    Record.user_id == user_id,
+                    Record.created_at >= start_dt,
+                    Record.created_at <= end_dt,
+                )
+                .order_by(Record.created_at.asc())
+                .all()
+            )
+
+            if not records:
+                # 최근 기간 내 일기가 0개면 공유 불가
+                raise ValueError("최근 7일 일기가 없습니다.")
+
+            # 기록이 1개 이상이면 해당 범위 내에서 요약 생성
+            items = []
+            summaries: List[str] = []
+            neg = {"우울", "슬픔", "분노", "혐오", "두려움", "불안", "짜증", "화남"}
+            neg_count = 0
+
+            for r in records[-period_days:]:
+                # 날짜
+                date_str = r.created_at.date().isoformat() if r.created_at else None
+                # 요약
+                summary = (r.ai_summary or "").strip()
+                if summary:
+                    summaries.append(summary)
+                # 주감정
+                primary_emotion = ""
+                try:
+                    if r.emotion_analysis:
+                        primary_emotion = r.emotion_analysis.get("primary_emotion", "")
+                except Exception:
+                    primary_emotion = ""
+
+                if primary_emotion in neg:
+                    neg_count += 1
+
+                items.append({
+                    "date": date_str,
+                    "summary": summary,
+                    "primary_emotion": primary_emotion,
+                })
+
+            total = len(items)
+            negative_ratio = round(neg_count / total, 3) if total > 0 else 0.0
+            one_line_summary = " ".join(s for s in summaries[-3:] if s)[:200]
 
         now = datetime.now(timezone.utc)
         expires_at = now + timedelta(days=expires_in_days)
 
         snapshot = {
-            "period": cache.period_days,
-            "items": cache.items,
-            "one_line_summary": cache.one_line_summary or "",
-            "negative_ratio": cache.negative_ratio or 0.0,
+            "period": period_days,
+            "items": items,
+            "one_line_summary": one_line_summary,
+            "negative_ratio": negative_ratio,
             "generated_at": now.isoformat(),
         }
 
