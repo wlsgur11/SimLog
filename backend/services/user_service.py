@@ -7,9 +7,15 @@ from database import get_db
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 import os
+import secrets
 
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = "HS256"
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    # 개발용 기본 시크릿 키 생성 (프로덕션에서는 반드시 환경변수 설정 필요)
+    SECRET_KEY = secrets.token_urlsafe(32)
+    print(f"⚠️ WARNING: Using generated SECRET_KEY. Set JWT_SECRET_KEY environment variable for production!")
+
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
