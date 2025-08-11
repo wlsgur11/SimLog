@@ -125,37 +125,16 @@ try:
                 except Exception as e:
                     logging.error(f"Failed to create table {table.name}: {e}")
         
-        # 상점 데이터 초기화 (필요시)
-        try:
-            # 상점 관련 테이블이 있는지 확인 (garden_item_templates 사용)
-            if 'garden_item_templates' in tables:
-                # COUNT 쿼리를 더 안전하게 실행
-                try:
-                    result = connection.execute(text("SELECT COUNT(*) as count FROM garden_item_templates"))
-                    row = result.fetchone()
-                    shop_item_count = row[0] if row else 0
-                    
-                    if shop_item_count == 0:
-                        logging.info("Shop is empty, initializing with default items...")
-                        # 기본 상점 아이템 추가
-                        _initialize_shop_items(connection)
-                        logging.info("Shop initialization completed")
-                    else:
-                        logging.info(f"Shop has {shop_item_count} items")
-                except Exception as e:
-                    logging.warning(f"Failed to count shop items: {e}")
-                    # 오류 발생 시 상점 초기화 시도
-                    try:
-                        logging.info("Attempting to initialize shop items...")
-                        _initialize_shop_items(connection)
-                        logging.info("Shop initialization completed after error")
-                    except Exception as init_error:
-                        logging.error(f"Shop initialization failed: {init_error}")
-            else:
-                logging.info("Shop table (garden_item_templates) not found, will be created during table creation")
-                
-        except Exception as e:
-            logging.warning(f"Shop initialization check failed: {e}")
+        # 테이블 생성 완료 후 상점 초기화 (add_garden_items.py 기반)
+        with engine.connect() as connection:
+            try:
+                # 상점에 기본 아이템들을 한번에 추가
+                logging.info("Initializing shop with default items...")
+                _initialize_shop_items(connection)
+                logging.info("Shop initialization completed successfully")
+            except Exception as e:
+                logging.warning(f"Shop initialization failed: {e}")
+                # 상점 초기화 실패해도 앱은 계속 실행
         
 except Exception as e:
     logging.error(f"Database initialization failed: {e}")
@@ -163,27 +142,56 @@ except Exception as e:
     # 데이터베이스 연결 실패해도 앱은 실행되도록 함
 
 def _initialize_shop_items(connection):
-    """상점에 기본 아이템들을 추가"""
+    """상점에 기본 아이템들을 한번에 추가 (add_garden_items.py 기반)"""
     try:
-        # 기본 상점 아이템들
+        # 기존 아이템 삭제 (중복 방지)
+        connection.execute(text("DELETE FROM garden_item_templates"))
+        logging.info("Cleared existing shop items")
+        
+        # 기본 상점 아이템들 (add_garden_items.py와 동일)
         items = [
+            # 배경 아이템들 - 1원으로 설정
             ("background", "잔디 배경", "자연스러운 잔디 배경", "assets/images/garden/backgrounds/Options=🌱 Grass.png", 1, "common", 0),
             ("background", "모래 배경", "따뜻한 모래 배경", "assets/images/garden/backgrounds/Options=🏝️ Sand.png", 1, "common", 0),
             ("background", "흙 배경", "비옥한 흙 배경", "assets/images/garden/backgrounds/Options=🪱 Soil.png", 1, "common", 0),
+            
+            # 연못 아이템들 - 더 비싸게 설정
             ("water", "연못", "아름다운 연못", "assets/images/garden/pond/pond/Direction=🔄 Center.png", 15, "common", 1),
+            
+            # 꽃 아이템들 - 노란 꽃, 보라 꽃, 분홍 꽃만 유지, 1원으로 설정
             ("decoration", "노란 꽃", "밝은 노란 꽃", "assets/images/garden/flowers/yellow.png", 1, "common", 2),
             ("decoration", "보라 꽃", "우아한 보라 꽃", "assets/images/garden/flowers/purple.png", 1, "common", 2),
             ("decoration", "분홍 꽃", "사랑스러운 분홍 꽃", "assets/images/garden/flowers/pink.png", 1, "common", 2),
+            
+            # 부시 아이템들 - 5원으로 설정, 올바른 이미지 경로 사용
             ("bush", "연한 초록 부시", "자연스러운 연한 초록 부시", "assets/images/garden/bushes/bush/light_green/horizontal_regular.png", 5, "common", 2),
             ("bush", "초록 부시", "자연스러운 초록 부시", "assets/images/garden/bushes/bush/green/horizontal_regular.png", 5, "common", 2),
+            ("bush", "이끼 초록 부시", "자연스러운 이끼 초록 부시", "assets/images/garden/bushes/bush/moss_green/horizontal_regular.png", 5, "common", 2),
+            ("bush", "어두운 이끼 초록 부시", "자연스러운 어두운 이끼 초록 부시", "assets/images/garden/bushes/bush/dark_moss_green/horizontal_regular.png", 5, "common", 2),
+            
+            # 울타리 아이템들 - 5원으로 설정
             ("decoration", "흰 울타리", "깔끔한 흰 울타리", "assets/images/garden/fence/white/Direction=↔️ Horizontal, Color=White.png", 5, "common", 2),
+            ("decoration", "연한 나무 울타리", "자연스러운 연한 나무 울타리", "assets/images/garden/fence/light_wood/Direction=↔️ Horizontal, Color=Light Wood.png", 5, "common", 2),
+            
+            # 다리 아이템들 - 5원으로 설정
             ("decoration", "나무 다리", "자연스러운 나무 다리", "assets/images/garden/bridge/bridge_horizontal.png", 5, "common", 2),
+            
+            # 물고기 아이템들 - 5원으로 설정
             ("decoration", "주황 물고기", "귀여운 주황 물고기", "assets/images/garden/fishes/orange.png", 5, "common", 2),
+            ("decoration", "빨간 물고기", "아름다운 빨간 물고기", "assets/images/garden/fishes/red.png", 5, "common", 2),
+            
+            # 채소 아이템들 - 1원으로 설정, 변형 아이템 제거
             ("decoration", "딸기", "달콤한 딸기", "assets/images/garden/veggie/single/Type=Strawberry.png", 1, "common", 2),
             ("decoration", "토마토", "신선한 토마토", "assets/images/garden/veggie/single/Type=Tomato.png", 1, "common", 2),
-            ("decoration", "당근", "달콤한 당근", "assets/images/garden/veggie/single/Type=Carrot.png", 1, "common", 2)
+            ("decoration", "오이", "아삭한 오이", "assets/images/garden/veggie/single/Type=Cucumber.png", 1, "common", 2),
+            ("decoration", "마늘", "향긋한 마늘", "assets/images/garden/veggie/single/Type=Garlic.png", 1, "common", 2),
+            ("decoration", "양파", "자연스러운 양파", "assets/images/garden/veggie/single/Type=Onion.png", 1, "common", 2),
+            ("decoration", "무", "아삭한 무", "assets/images/garden/veggie/single/Type=Radish.png", 1, "common", 2),
+            ("decoration", "당근", "달콤한 당근", "assets/images/garden/veggie/single/Type=Carrot.png", 1, "common", 2),
+            ("decoration", "체리 토마토", "작고 귀여운 체리 토마토", "assets/images/garden/veggie/single/Type=Cherry Tomatoes.png", 1, "common", 2)
         ]
         
+        # 모든 아이템을 한번에 추가
         for item_type, item_name, item_description, item_image, price, rarity, layer in items:
             connection.execute(text("""
                 INSERT INTO garden_item_templates 
@@ -201,11 +209,12 @@ def _initialize_shop_items(connection):
             })
         
         connection.commit()
-        logging.info(f"Added {len(items)} items to shop")
+        logging.info(f"Successfully added {len(items)} items to shop")
         
     except Exception as e:
         logging.error(f"Failed to initialize shop items: {e}")
         connection.rollback()
+        raise  # 오류를 상위로 전파하여 로깅
 
 # 단계 1: 기본 컨트롤러 (이미 성공한 것들)
 try:
