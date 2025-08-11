@@ -81,60 +81,16 @@ try:
     Base.metadata.create_all(bind=engine)
     logging.info("Database tables created successfully")
     
-    # 테이블 존재 확인 (SHOW TABLES 제거하여 Boolean 오류 방지)
+    # 테이블 생성 완료 후 상점 초기화 (add_garden_items.py 기반)
     with engine.connect() as connection:
-        # 간단한 방법으로 테이블 존재 여부 확인
-        tables = []
         try:
-            # users 테이블이 존재하는지 간단한 쿼리로 확인
-            connection.execute(text("SELECT 1 FROM users LIMIT 1"))
-            tables.append('users')
-            logging.info("Users table exists")
-        except Exception:
-            logging.info("Users table does not exist")
-        
-        try:
-            connection.execute(text("SELECT 1 FROM garden_item_templates LIMIT 1"))
-            tables.append('garden_item_templates')
-            logging.info("Garden item templates table exists")
-        except Exception:
-            logging.info("Garden item templates table does not exist")
-        
-        # 필요한 모든 테이블 생성
-        required_tables = []
-        
-        # 기본 테이블들 (반드시 필요)
-        if User:
-            required_tables.append(User.__table__)
-        if Record:
-            required_tables.append(Record.__table__)
-        if GardenItem:
-            required_tables.append(GardenItem.__table__)
-        if GardenItemTemplate:
-            required_tables.append(GardenItemTemplate.__table__)
-        
-        # 추가 테이블들
-        required_tables.extend(additional_models)
-        
-        for table in required_tables:
-            if table and table.name not in tables:
-                logging.warning(f"Table {table.name} not found, creating...")
-                try:
-                    Base.metadata.create_all(bind=engine, tables=[table])
-                    logging.info(f"Table {table.name} created successfully")
-                except Exception as e:
-                    logging.error(f"Failed to create table {table.name}: {e}")
-        
-        # 테이블 생성 완료 후 상점 초기화 (add_garden_items.py 기반)
-        with engine.connect() as connection:
-            try:
-                # 상점에 기본 아이템들을 한번에 추가
-                logging.info("Initializing shop with default items...")
-                _initialize_shop_items(connection)
-                logging.info("Shop initialization completed successfully")
-            except Exception as e:
-                logging.warning(f"Shop initialization failed: {e}")
-                # 상점 초기화 실패해도 앱은 계속 실행
+            # 상점에 기본 아이템들을 한번에 추가
+            logging.info("Initializing shop with default items...")
+            _initialize_shop_items(connection)
+            logging.info("Shop initialization completed successfully")
+        except Exception as e:
+            logging.warning(f"Shop initialization failed: {e}")
+            # 상점 초기화 실패해도 앱은 계속 실행
         
 except Exception as e:
     logging.error(f"Database initialization failed: {e}")
