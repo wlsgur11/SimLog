@@ -2,8 +2,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  // TODO: 실제 서버 주소로 변경
-  static const String baseUrl = 'http://localhost:8000';
+  // Railway 배포된 백엔드 서버
+  static const String baseUrl = 'https://simlog-production.up.railway.app';
+  
+  // 개발용 로컬 URL (필요시 주석 해제)
+  // static const String baseUrl = 'http://localhost:8000';
   // ===== Reports & Alerts =====
   static Future<Map<String, dynamic>> getConsent({required String accessToken}) async {
     final url = Uri.parse('$baseUrl/reports/consent');

@@ -10,7 +10,7 @@ import 'dart:async';
 import 'web_recorder.dart';
 
 class VoiceService {
-  static const String baseUrl = 'http://localhost:8000';
+  static const String baseUrl = 'https://simlog-production.up.railway.app';
   final AudioRecorder _audioRecorder = AudioRecorder();
   final WebRecorder _webRecorder = WebRecorder();
   bool _isRecording = false;
