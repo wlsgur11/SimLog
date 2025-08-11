@@ -36,20 +36,16 @@ try:
 except Exception as e:
     logging.warning(f"Failed to import UserConsent model: {e}")
 
-# 존재하지 않는 모델들은 제거
-# try:
-#     from models.shop_item import ShopItem
-#     additional_models.append(ShopItem.__table__)
-#     logging.info("ShopItem model imported successfully")
-# except Exception as e:
-#     logging.warning(f"Failed to import ShopItem model: {e}")
+try:
+    from models.weekly_summary import WeeklySummaryCache
+    additional_models.append(WeeklySummaryCache.__table__)
+    logging.info("WeeklySummaryCache model imported successfully")
+except Exception as e:
+    logging.warning(f"Failed to import WeeklySummaryCache model: {e}")
 
-# try:
-#     from models.user_inventory import UserInventory
-#     additional_models.append(UserInventory.__table__)
-#     logging.info("UserInventory model imported successfully")
-# except Exception as e:
-#     logging.warning(f"Failed to import UserInventory model: {e}")
+# 실제로는 garden_item_templates와 garden_items를 사용
+# shop_items, user_inventory는 별도 테이블이 아님
+logging.info("Shop and inventory use garden_item_templates and garden_items tables")
 
 # 로깅 설정
 logging.basicConfig(level=logging.DEBUG)  # DEBUG 레벨로 변경
@@ -84,7 +80,7 @@ try:
     # 테이블 생성
     Base.metadata.create_all(bind=engine)
     logging.info("Database tables created successfully")
-    
+        
     # 테이블 존재 확인
     with engine.connect() as connection:
         result = connection.execute(text("SHOW TABLES"))
@@ -116,24 +112,24 @@ try:
                 except Exception as e:
                     logging.error(f"Failed to create table {table.name}: {e}")
         
-        # 상점 데이터 초기화 (필요시)
-        try:
-            # 상점 관련 테이블이 있는지 확인
-            if 'shop_items' in tables:
-                result = connection.execute(text("SELECT COUNT(*) FROM shop_items"))
-                shop_item_count = result.scalar()
-                
-                if shop_item_count == 0:
-                    logging.info("Shop is empty, initializing with default items...")
-                    # 기본 상점 아이템 추가 로직 (필요시 구현)
-                    logging.info("Shop initialization completed")
+            # 상점 데이터 초기화 (필요시)
+            try:
+                # 상점 관련 테이블이 있는지 확인 (garden_item_templates 사용)
+                if 'garden_item_templates' in tables:
+                    result = connection.execute(text("SELECT COUNT(*) FROM garden_item_templates"))
+                    shop_item_count = result.scalar()
+                    
+                    if shop_item_count == 0:
+                        logging.info("Shop is empty, initializing with default items...")
+                        # 기본 상점 아이템 추가 로직 (필요시 구현)
+                        logging.info("Shop initialization completed")
+                    else:
+                        logging.info(f"Shop has {shop_item_count} items")
                 else:
-                    logging.info(f"Shop has {shop_item_count} items")
-            else:
-                logging.info("Shop table not found, skipping shop initialization")
-                
-        except Exception as e:
-            logging.warning(f"Shop initialization check failed: {e}")
+                    logging.info("Shop table (garden_item_templates) not found, will be created during table creation")
+                    
+            except Exception as e:
+                logging.warning(f"Shop initialization check failed: {e}")
         
 except Exception as e:
     logging.error(f"Database initialization failed: {e}")
