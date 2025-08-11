@@ -11,4 +11,6 @@ openai==1.0.0
 # Naver Clova STT 관련
 aiofiles==23.2.1
 # 오디오 처리
-pydub==0.25.1 
+pydub==0.25.1
+# 이메일 검증
+email-validator==2.1.0 
