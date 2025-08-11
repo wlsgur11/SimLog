@@ -129,16 +129,28 @@ try:
         try:
             # 상점 관련 테이블이 있는지 확인 (garden_item_templates 사용)
             if 'garden_item_templates' in tables:
-                result = connection.execute(text("SELECT COUNT(*) FROM garden_item_templates"))
-                shop_item_count = result.scalar()
-                
-                if shop_item_count == 0:
-                    logging.info("Shop is empty, initializing with default items...")
-                    # 기본 상점 아이템 추가
-                    _initialize_shop_items(connection)
-                    logging.info("Shop initialization completed")
-                else:
-                    logging.info(f"Shop has {shop_item_count} items")
+                # COUNT 쿼리를 더 안전하게 실행
+                try:
+                    result = connection.execute(text("SELECT COUNT(*) as count FROM garden_item_templates"))
+                    row = result.fetchone()
+                    shop_item_count = row[0] if row else 0
+                    
+                    if shop_item_count == 0:
+                        logging.info("Shop is empty, initializing with default items...")
+                        # 기본 상점 아이템 추가
+                        _initialize_shop_items(connection)
+                        logging.info("Shop initialization completed")
+                    else:
+                        logging.info(f"Shop has {shop_item_count} items")
+                except Exception as e:
+                    logging.warning(f"Failed to count shop items: {e}")
+                    # 오류 발생 시 상점 초기화 시도
+                    try:
+                        logging.info("Attempting to initialize shop items...")
+                        _initialize_shop_items(connection)
+                        logging.info("Shop initialization completed after error")
+                    except Exception as init_error:
+                        logging.error(f"Shop initialization failed: {init_error}")
             else:
                 logging.info("Shop table (garden_item_templates) not found, will be created during table creation")
                 
