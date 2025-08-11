@@ -58,3 +58,9 @@ def seed_on_startup():
 @app.get("/")
 def read_root():
     return {"message": "SimLog API is running!"}
+
+# Railway 배포를 위한 서버 실행 코드
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
