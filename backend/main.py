@@ -3,12 +3,52 @@ import os
 import logging
 from sqlalchemy import text
 from database import Base, engine
-from models.user import User
-from models.record import EmotionRecord
-from models.garden_item import GardenItem, GardenItemTemplate
-from models.user_consent import UserConsent
-from models.shop_item import ShopItem
-from models.user_inventory import UserInventory
+
+# 기본 모델들만 먼저 import
+try:
+    from models.user import User
+    logging.info("User model imported successfully")
+except Exception as e:
+    logging.error(f"Failed to import User model: {e}")
+    User = None
+
+try:
+    from models.record import EmotionRecord
+    logging.info("EmotionRecord model imported successfully")
+except Exception as e:
+    logging.error(f"Failed to import EmotionRecord model: {e}")
+    EmotionRecord = None
+
+try:
+    from models.garden_item import GardenItem, GardenItemTemplate
+    logging.info("Garden models imported successfully")
+except Exception as e:
+    logging.error(f"Failed to import Garden models: {e}")
+    GardenItem = None
+    GardenItemTemplate = None
+
+# 추가 모델들은 나중에 import
+additional_models = []
+try:
+    from models.user_consent import UserConsent
+    additional_models.append(UserConsent.__table__)
+    logging.info("UserConsent model imported successfully")
+except Exception as e:
+    logging.warning(f"Failed to import UserConsent model: {e}")
+
+try:
+    from models.shop_item import ShopItem
+    additional_models.append(ShopItem.__table__)
+    logging.info("ShopItem model imported successfully")
+except Exception as e:
+    logging.warning(f"Failed to import ShopItem model: {e}")
+
+try:
+    from models.user_inventory import UserInventory
+    additional_models.append(UserInventory.__table__)
+    logging.info("UserInventory model imported successfully")
+except Exception as e:
+    logging.warning(f"Failed to import UserInventory model: {e}")
 
 # 로깅 설정
 logging.basicConfig(level=logging.DEBUG)  # DEBUG 레벨로 변경
@@ -51,21 +91,29 @@ try:
         logging.info(f"Existing tables: {tables}")
         
         # 필요한 모든 테이블 생성
-        required_tables = [
-            User.__table__,
-            EmotionRecord.__table__,
-            GardenItem.__table__,
-            GardenItemTemplate.__table__,
-            UserConsent.__table__,
-            ShopItem.__table__,
-            UserInventory.__table__
-        ]
+        required_tables = []
+        
+        # 기본 테이블들 (반드시 필요)
+        if User:
+            required_tables.append(User.__table__)
+        if EmotionRecord:
+            required_tables.append(EmotionRecord.__table__)
+        if GardenItem:
+            required_tables.append(GardenItem.__table__)
+        if GardenItemTemplate:
+            required_tables.append(GardenItemTemplate.__table__)
+        
+        # 추가 테이블들
+        required_tables.extend(additional_models)
         
         for table in required_tables:
-            if table.name not in tables:
+            if table and table.name not in tables:
                 logging.warning(f"Table {table.name} not found, creating...")
-                Base.metadata.create_all(bind=engine, tables=[table])
-                logging.info(f"Table {table.name} created successfully")
+                try:
+                    Base.metadata.create_all(bind=engine, tables=[table])
+                    logging.info(f"Table {table.name} created successfully")
+                except Exception as e:
+                    logging.error(f"Failed to create table {table.name}: {e}")
         
         # 상점 데이터 초기화 (필요시)
         try:
