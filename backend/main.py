@@ -80,7 +80,7 @@ try:
     # 테이블 생성
     Base.metadata.create_all(bind=engine)
     logging.info("Database tables created successfully")
-        
+    
     # 테이블 존재 확인
     with engine.connect() as connection:
         result = connection.execute(text("SHOW TABLES"))
@@ -112,29 +112,75 @@ try:
                 except Exception as e:
                     logging.error(f"Failed to create table {table.name}: {e}")
         
-            # 상점 데이터 초기화 (필요시)
-            try:
-                # 상점 관련 테이블이 있는지 확인 (garden_item_templates 사용)
-                if 'garden_item_templates' in tables:
-                    result = connection.execute(text("SELECT COUNT(*) FROM garden_item_templates"))
-                    shop_item_count = result.scalar()
-                    
-                    if shop_item_count == 0:
-                        logging.info("Shop is empty, initializing with default items...")
-                        # 기본 상점 아이템 추가 로직 (필요시 구현)
-                        logging.info("Shop initialization completed")
-                    else:
-                        logging.info(f"Shop has {shop_item_count} items")
+        # 상점 데이터 초기화 (필요시)
+        try:
+            # 상점 관련 테이블이 있는지 확인 (garden_item_templates 사용)
+            if 'garden_item_templates' in tables:
+                result = connection.execute(text("SELECT COUNT(*) FROM garden_item_templates"))
+                shop_item_count = result.scalar()
+                
+                if shop_item_count == 0:
+                    logging.info("Shop is empty, initializing with default items...")
+                    # 기본 상점 아이템 추가
+                    _initialize_shop_items(connection)
+                    logging.info("Shop initialization completed")
                 else:
-                    logging.info("Shop table (garden_item_templates) not found, will be created during table creation")
-                    
-            except Exception as e:
-                logging.warning(f"Shop initialization check failed: {e}")
+                    logging.info(f"Shop has {shop_item_count} items")
+            else:
+                logging.info("Shop table (garden_item_templates) not found, will be created during table creation")
+                
+        except Exception as e:
+            logging.warning(f"Shop initialization check failed: {e}")
         
 except Exception as e:
     logging.error(f"Database initialization failed: {e}")
     logging.error(f"Error type: {type(e)}")
     # 데이터베이스 연결 실패해도 앱은 실행되도록 함
+
+def _initialize_shop_items(connection):
+    """상점에 기본 아이템들을 추가"""
+    try:
+        # 기본 상점 아이템들
+        items = [
+            ("background", "잔디 배경", "자연스러운 잔디 배경", "assets/images/garden/backgrounds/Options=🌱 Grass.png", 1, "common", 0),
+            ("background", "모래 배경", "따뜻한 모래 배경", "assets/images/garden/backgrounds/Options=🏝️ Sand.png", 1, "common", 0),
+            ("background", "흙 배경", "비옥한 흙 배경", "assets/images/garden/backgrounds/Options=🪱 Soil.png", 1, "common", 0),
+            ("water", "연못", "아름다운 연못", "assets/images/garden/pond/pond/Direction=🔄 Center.png", 15, "common", 1),
+            ("decoration", "노란 꽃", "밝은 노란 꽃", "assets/images/garden/flowers/yellow.png", 1, "common", 2),
+            ("decoration", "보라 꽃", "우아한 보라 꽃", "assets/images/garden/flowers/purple.png", 1, "common", 2),
+            ("decoration", "분홍 꽃", "사랑스러운 분홍 꽃", "assets/images/garden/flowers/pink.png", 1, "common", 2),
+            ("bush", "연한 초록 부시", "자연스러운 연한 초록 부시", "assets/images/garden/bushes/bush/light_green/horizontal_regular.png", 5, "common", 2),
+            ("bush", "초록 부시", "자연스러운 초록 부시", "assets/images/garden/bushes/bush/green/horizontal_regular.png", 5, "common", 2),
+            ("decoration", "흰 울타리", "깔끔한 흰 울타리", "assets/images/garden/fence/white/Direction=↔️ Horizontal, Color=White.png", 5, "common", 2),
+            ("decoration", "나무 다리", "자연스러운 나무 다리", "assets/images/garden/bridge/bridge_horizontal.png", 5, "common", 2),
+            ("decoration", "주황 물고기", "귀여운 주황 물고기", "assets/images/garden/fishes/orange.png", 5, "common", 2),
+            ("decoration", "딸기", "달콤한 딸기", "assets/images/garden/veggie/single/Type=Strawberry.png", 1, "common", 2),
+            ("decoration", "토마토", "신선한 토마토", "assets/images/garden/veggie/single/Type=Tomato.png", 1, "common", 2),
+            ("decoration", "당근", "달콤한 당근", "assets/images/garden/veggie/single/Type=Carrot.png", 1, "common", 2)
+        ]
+        
+        for item_type, item_name, item_description, item_image, price, rarity, layer in items:
+            connection.execute(text("""
+                INSERT INTO garden_item_templates 
+                (item_type, item_name, item_description, item_image, price, rarity, layer, is_available, created_at)
+                VALUES (:item_type, :item_name, :item_description, :item_image, :price, :rarity, :layer, :is_available, NOW())
+            """), {
+                "item_type": item_type,
+                "item_name": item_name,
+                "item_description": item_description,
+                "item_image": item_image,
+                "price": price,
+                "rarity": rarity,
+                "layer": layer,
+                "is_available": True
+            })
+        
+        connection.commit()
+        logging.info(f"Added {len(items)} items to shop")
+        
+    except Exception as e:
+        logging.error(f"Failed to initialize shop items: {e}")
+        connection.rollback()
 
 # 단계 1: 기본 컨트롤러 (이미 성공한 것들)
 try:
