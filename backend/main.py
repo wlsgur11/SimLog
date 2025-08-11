@@ -13,11 +13,11 @@ except Exception as e:
     User = None
 
 try:
-    from models.record import EmotionRecord
-    logging.info("EmotionRecord model imported successfully")
+    from models.record import Record
+    logging.info("Record model imported successfully")
 except Exception as e:
-    logging.error(f"Failed to import EmotionRecord model: {e}")
-    EmotionRecord = None
+    logging.error(f"Failed to import Record model: {e}")
+    Record = None
 
 try:
     from models.garden_item import GardenItem, GardenItemTemplate
@@ -27,7 +27,7 @@ except Exception as e:
     GardenItem = None
     GardenItemTemplate = None
 
-# 추가 모델들은 나중에 import
+# 추가 모델들은 나중에 import (존재하는 것만)
 additional_models = []
 try:
     from models.user_consent import UserConsent
@@ -36,19 +36,20 @@ try:
 except Exception as e:
     logging.warning(f"Failed to import UserConsent model: {e}")
 
-try:
-    from models.shop_item import ShopItem
-    additional_models.append(ShopItem.__table__)
-    logging.info("ShopItem model imported successfully")
-except Exception as e:
-    logging.warning(f"Failed to import ShopItem model: {e}")
+# 존재하지 않는 모델들은 제거
+# try:
+#     from models.shop_item import ShopItem
+#     additional_models.append(ShopItem.__table__)
+#     logging.info("ShopItem model imported successfully")
+# except Exception as e:
+#     logging.warning(f"Failed to import ShopItem model: {e}")
 
-try:
-    from models.user_inventory import UserInventory
-    additional_models.append(UserInventory.__table__)
-    logging.info("UserInventory model imported successfully")
-except Exception as e:
-    logging.warning(f"Failed to import UserInventory model: {e}")
+# try:
+#     from models.user_inventory import UserInventory
+#     additional_models.append(UserInventory.__table__)
+#     logging.info("UserInventory model imported successfully")
+# except Exception as e:
+#     logging.warning(f"Failed to import UserInventory model: {e}")
 
 # 로깅 설정
 logging.basicConfig(level=logging.DEBUG)  # DEBUG 레벨로 변경
@@ -96,8 +97,8 @@ try:
         # 기본 테이블들 (반드시 필요)
         if User:
             required_tables.append(User.__table__)
-        if EmotionRecord:
-            required_tables.append(EmotionRecord.__table__)
+        if Record:
+            required_tables.append(Record.__table__)
         if GardenItem:
             required_tables.append(GardenItem.__table__)
         if GardenItemTemplate:
@@ -117,16 +118,19 @@ try:
         
         # 상점 데이터 초기화 (필요시)
         try:
-            # 상점에 기본 아이템이 있는지 확인
-            result = connection.execute(text("SELECT COUNT(*) FROM shop_items"))
-            shop_item_count = result.scalar()
-            
-            if shop_item_count == 0:
-                logging.info("Shop is empty, initializing with default items...")
-                # 기본 상점 아이템 추가 로직 (필요시 구현)
-                logging.info("Shop initialization completed")
+            # 상점 관련 테이블이 있는지 확인
+            if 'shop_items' in tables:
+                result = connection.execute(text("SELECT COUNT(*) FROM shop_items"))
+                shop_item_count = result.scalar()
+                
+                if shop_item_count == 0:
+                    logging.info("Shop is empty, initializing with default items...")
+                    # 기본 상점 아이템 추가 로직 (필요시 구현)
+                    logging.info("Shop initialization completed")
+                else:
+                    logging.info(f"Shop has {shop_item_count} items")
             else:
-                logging.info(f"Shop has {shop_item_count} items")
+                logging.info("Shop table not found, skipping shop initialization")
                 
         except Exception as e:
             logging.warning(f"Shop initialization check failed: {e}")
