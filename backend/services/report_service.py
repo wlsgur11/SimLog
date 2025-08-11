@@ -136,7 +136,7 @@ class ReportService:
             "items": items,
             "one_line_summary": one_line_summary,
             "negative_ratio": negative_ratio,
-            "generated_at": now.isoformat(),
+            "generated_at": now.astimezone(timezone.utc).replace(tzinfo=None).isoformat(),
         }
 
         token = ReportService._generate_token()
@@ -150,8 +150,12 @@ class ReportService:
             revoked=False,
         )
         db.add(share)
-        db.commit()
-        db.refresh(share)
+        try:
+            db.commit()
+            db.refresh(share)
+        except Exception as e:
+            db.rollback()
+            raise ValueError(f"공유 링크 저장 실패: {str(e)}")
 
         return {
             "token": token,
