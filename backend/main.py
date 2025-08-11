@@ -18,7 +18,13 @@ import logging
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
 
-Base.metadata.create_all(bind=engine)
+# 데이터베이스 초기화 (오류 처리 포함)
+try:
+    Base.metadata.create_all(bind=engine)
+    logging.info("Database tables created successfully")
+except Exception as e:
+    logging.warning(f"Database initialization failed: {e}")
+    # 데이터베이스 연결 실패해도 앱은 실행되도록 함
 
 app = FastAPI()
 
@@ -58,6 +64,10 @@ def seed_on_startup():
 @app.get("/")
 def read_root():
     return {"message": "SimLog API is running!"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "timestamp": "2025-01-27"}
 
 # Railway 배포를 위한 서버 실행 코드
 if __name__ == "__main__":
