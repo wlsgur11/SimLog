@@ -1739,8 +1739,8 @@ class GardenScreenState extends State<GardenScreen> {
     }
     // 나무 다리의 경우 방향별 이미지
     else if (item.item_name.contains('다리')) {
-      print('다리 방향 선택: $variant'); // 디버깅용 로그 추가
-      print('다리 아이템 이름: ${item.item_name}'); // 추가 디버깅
+      // print('다리 방향 선택: $variant'); // 디버깅용 로그 추가
+      // print('다리 아이템 이름: ${item.item_name}'); // 추가 디버깅
       
       if (variant == 'horizontal') {
         imagePath = 'assets/images/garden/bridge/bridge_horizontal.png';
@@ -1876,7 +1876,7 @@ class GardenScreenState extends State<GardenScreen> {
 
     
     if (imagePath != null) {
-      print('이미지 로드 시도: $imagePath'); // 디버깅용 로그 추가
+      // print('이미지 로드 시도: $imagePath'); // 디버깅용 로그 추가
       return Image.asset(
         imagePath,
         width: 40,
