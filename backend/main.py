@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 import os
 import logging
+from sqlalchemy import text
+from database import Base, engine
+from models.user import User
 
 # 로깅 설정
 logging.basicConfig(level=logging.DEBUG)  # DEBUG 레벨로 변경
@@ -28,11 +31,29 @@ def health_check():
 
 # 데이터베이스 초기화 (오류 처리 포함)
 try:
-    from database import Base, engine
+    # 데이터베이스 연결 테스트
+    with engine.connect() as connection:
+        logging.info("Database connection successful")
+        
+    # 테이블 생성
     Base.metadata.create_all(bind=engine)
     logging.info("Database tables created successfully")
+    
+    # 테이블 존재 확인
+    with engine.connect() as connection:
+        result = connection.execute(text("SHOW TABLES"))
+        tables = [row[0] for row in result]
+        logging.info(f"Existing tables: {tables}")
+        
+        if 'users' not in tables:
+            logging.error("Users table was not created!")
+            # 강제로 테이블 생성 시도
+            Base.metadata.create_all(bind=engine, tables=[User.__table__])
+            logging.info("Users table created forcefully")
+        
 except Exception as e:
-    logging.warning(f"Database initialization failed: {e}")
+    logging.error(f"Database initialization failed: {e}")
+    logging.error(f"Error type: {type(e)}")
     # 데이터베이스 연결 실패해도 앱은 실행되도록 함
 
 # 단계 1: 기본 컨트롤러 (이미 성공한 것들)
