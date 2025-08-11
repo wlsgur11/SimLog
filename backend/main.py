@@ -43,6 +43,13 @@ try:
 except Exception as e:
     logging.warning(f"Failed to import WeeklySummaryCache model: {e}")
 
+try:
+    from models.shared_report import SharedReport
+    additional_models.append(SharedReport.__table__)
+    logging.info("SharedReport model imported successfully")
+except Exception as e:
+    logging.warning(f"Failed to import SharedReport model: {e}")
+
 # 실제로는 garden_item_templates와 garden_items를 사용
 # shop_items, user_inventory는 별도 테이블이 아님
 logging.info("Shop and inventory use garden_item_templates and garden_items tables")
