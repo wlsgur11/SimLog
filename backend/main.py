@@ -81,17 +81,6 @@ try:
     Base.metadata.create_all(bind=engine)
     logging.info("Database tables created successfully")
     
-    # 테이블 생성 완료 후 상점 초기화 (add_garden_items.py 기반)
-    with engine.connect() as connection:
-        try:
-            # 상점에 기본 아이템들을 한번에 추가
-            logging.info("Initializing shop with default items...")
-            _initialize_shop_items(connection)
-            logging.info("Shop initialization completed successfully")
-        except Exception as e:
-            logging.warning(f"Shop initialization failed: {e}")
-            # 상점 초기화 실패해도 앱은 계속 실행
-        
 except Exception as e:
     logging.error(f"Database initialization failed: {e}")
     logging.error(f"Error type: {type(e)}")
@@ -233,6 +222,17 @@ except Exception as e:
 
 @app.on_event("startup")
 def seed_on_startup():
+    """앱 시작 시 상점 초기화 및 개발용 더미 데이터 시드"""
+    try:
+        # 상점에 기본 아이템들을 한번에 추가
+        logging.info("Initializing shop with default items...")
+        with engine.connect() as connection:
+            _initialize_shop_items(connection)
+        logging.info("Shop initialization completed successfully")
+    except Exception as e:
+        logging.warning(f"Shop initialization failed: {e}")
+        # 상점 초기화 실패해도 앱은 계속 실행
+    
     # 개발용 더미 데이터 시드 (옵션)
     if os.environ.get("SIMLOG_DEV_SEED_WEEK") == "1":
         try:
