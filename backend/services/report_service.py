@@ -128,6 +128,8 @@ class ReportService:
 
         now = datetime.now(timezone.utc)
         expires_at = now + timedelta(days=expires_in_days)
+        # MySQL은 timezone-aware datetime을 직접 저장하지 못할 수 있으므로 naive UTC로 변환
+        expires_at_naive = expires_at.astimezone(timezone.utc).replace(tzinfo=None)
 
         snapshot = {
             "period": period_days,
@@ -144,7 +146,7 @@ class ReportService:
             user_id=user_id,
             token_digest=token_digest,
             snapshot=snapshot,
-            expires_at=expires_at,
+            expires_at=expires_at_naive,
             revoked=False,
         )
         db.add(share)
@@ -153,7 +155,7 @@ class ReportService:
 
         return {
             "token": token,
-            "expires_at": expires_at,
+            "expires_at": expires_at,  # 응답은 timezone-aware ISO로 반환
         }
 
     @staticmethod
