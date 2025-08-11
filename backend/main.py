@@ -83,9 +83,13 @@ try:
     
     # 테이블 존재 확인
     with engine.connect() as connection:
-        result = connection.execute(text("SHOW TABLES"))
-        tables = [row[0] for row in result]
-        logging.info(f"Existing tables: {tables}")
+        try:
+            result = connection.execute(text("SHOW TABLES"))
+            tables = [row[0] for row in result]
+            logging.info(f"Existing tables: {tables}")
+        except Exception as e:
+            logging.warning(f"Failed to get table list: {e}")
+            tables = []
         
         # 필요한 모든 테이블 생성
         required_tables = []
