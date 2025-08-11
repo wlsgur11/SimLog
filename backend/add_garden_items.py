@@ -13,10 +13,18 @@ from sqlalchemy.exc import OperationalError
 load_dotenv()
 
 # 데이터베이스 연결 설정
-DB_USER = os.getenv("DB_USER", "root")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "1234")
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_NAME = os.getenv("DB_NAME", "simlog")
+# Railway MySQL 환경변수 사용
+DB_USER = os.getenv("MYSQL_USER", "simlog_user")
+DB_PASSWORD = os.getenv("MYSQL_PASSWORD", "simlog_password")
+DB_HOST = os.getenv("MYSQL_HOST", "localhost")
+DB_NAME = os.getenv("MYSQL_DATABASE", "railway")
+
+# Railway 환경변수 우선 사용
+if os.getenv("RAILWAY_ENVIRONMENT"):
+    DB_USER = os.getenv("MYSQL_USER", "simlog_user")
+    DB_PASSWORD = os.getenv("MYSQL_PASSWORD", "simlog_password")
+    DB_HOST = os.getenv("MYSQL_HOST", "localhost")
+    DB_NAME = os.getenv("MYSQL_DATABASE", "railway")
 
 DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:3306/{DB_NAME}?charset=utf8mb4"
 
