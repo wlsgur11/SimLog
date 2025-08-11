@@ -81,15 +81,24 @@ try:
     Base.metadata.create_all(bind=engine)
     logging.info("Database tables created successfully")
     
-    # 테이블 존재 확인
+    # 테이블 존재 확인 (SHOW TABLES 제거하여 Boolean 오류 방지)
     with engine.connect() as connection:
+        # 간단한 방법으로 테이블 존재 여부 확인
+        tables = []
         try:
-            result = connection.execute(text("SHOW TABLES"))
-            tables = [row[0] for row in result]
-            logging.info(f"Existing tables: {tables}")
-        except Exception as e:
-            logging.warning(f"Failed to get table list: {e}")
-            tables = []
+            # users 테이블이 존재하는지 간단한 쿼리로 확인
+            connection.execute(text("SELECT 1 FROM users LIMIT 1"))
+            tables.append('users')
+            logging.info("Users table exists")
+        except Exception:
+            logging.info("Users table does not exist")
+        
+        try:
+            connection.execute(text("SELECT 1 FROM garden_item_templates LIMIT 1"))
+            tables.append('garden_item_templates')
+            logging.info("Garden item templates table exists")
+        except Exception:
+            logging.info("Garden item templates table does not exist")
         
         # 필요한 모든 테이블 생성
         required_tables = []
