@@ -16,8 +16,8 @@ def get_consent(
     current_user: User = Depends(get_current_user)
 ):
     try:
-        consented = ReportService.get_consent(db, current_user.id)
-        return {"consented": consented}
+        consent_info = ReportService.get_consent(db, current_user.id)
+        return consent_info
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"동의 상태 조회 실패: {str(e)}")
 

@@ -27,9 +27,34 @@ class ReportService:
         return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
     @staticmethod
-    def get_consent(db: Session, user_id: int) -> bool:
+    def get_consent(db: Session, user_id: int) -> Dict:
+        """사용자의 동의 상태와 상세 정보를 반환"""
         consent = db.query(UserConsent).filter(UserConsent.user_id == user_id).first()
-        return bool(consent and consent.consented)
+        
+        if not consent:
+            return {
+                "consented": False,
+                "has_record": True,
+                "message": "동의하셔야 합니다",
+                "action_required": "consent"
+            }
+        
+        if not consent.consented:
+            return {
+                "consented": False,
+                "has_record": True,
+                "message": "동의하셔야 합니다",
+                "action_required": "consent",
+                "revoked_at": consent.revoked_at
+            }
+        
+        return {
+            "consented": True,
+            "has_record": True,
+            "message": "이미 동의하셨습니다",
+            "action_required": "none",
+            "consented_at": consent.consented_at
+        }
 
     @staticmethod
     def set_consent(db: Session, user_id: int, consented: bool) -> Dict:
@@ -56,7 +81,8 @@ class ReportService:
     @staticmethod
     def create_weekly_share(db: Session, user_id: int, period_days: int = 7, expires_in_days: int = 7) -> Dict:
         # 동의 확인
-        if not ReportService.get_consent(db, user_id):
+        consent_info = ReportService.get_consent(db, user_id)
+        if not consent_info["consented"]:
             raise ValueError("사용자가 공유에 동의하지 않았습니다.")
 
         cache: Optional[WeeklySummaryCache] = db.query(WeeklySummaryCache).filter(
