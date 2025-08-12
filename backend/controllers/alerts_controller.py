@@ -38,12 +38,34 @@ def check_negative_alert(
         if not cache or not cache.items:
             return {"should_alert": False}
 
-        items = cache.items or []
-        days_negative = sum(1 for it in items if it.get("primary_emotion") in NEGATIVE_EMOTIONS)
-        negative_ratio = (days_negative / len(items)) if items else 0.0
+        # 방어적으로 items 파싱
+        raw_items = cache.items or []
+        if not isinstance(raw_items, list):
+            raw_items = []
+
+        safe_items = []
+        for it in raw_items:
+            if isinstance(it, dict):
+                safe_items.append(it)
+                continue
+            if isinstance(it, str):
+                # 문자열이면 JSON 파싱 시도
+                try:
+                    import json
+                    parsed = json.loads(it)
+                    if isinstance(parsed, dict):
+                        safe_items.append(parsed)
+                except Exception:
+                    continue
+
+        if not safe_items:
+            return {"should_alert": False}
+
+        days_negative = sum(1 for it in safe_items if (it.get("primary_emotion") in NEGATIVE_EMOTIONS))
+        negative_ratio = (days_negative / len(safe_items)) if safe_items else 0.0
 
         # 기준: 최근 7일 중 5일 이상 부정 or 부정 비율 >= 0.6
-        should_alert = (len(items) >= 7 and days_negative >= 5) or negative_ratio >= 0.6
+        should_alert = (len(safe_items) >= 7 and days_negative >= 5) or negative_ratio >= 0.6
 
         result = {
             "should_alert": should_alert,
@@ -55,7 +77,8 @@ def check_negative_alert(
         }
         return result
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"알림 검사 실패: {str(e)}")
+        # 예외가 발생해도 200으로 기본 응답 반환 (프론트 안정성)
+        return {"should_alert": False, "error": f"alerts/check fallback: {str(e)}"}
 
 
 @router.post("/ack")

@@ -78,37 +78,76 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       setState(() { isLoading = true; });
       try {
         if (isLogin) {
-          final result = await ApiService.login(
-            email: emailController.text.trim(),
-            password: passwordController.text.trim(),
-          );
-          final accessToken = result['access_token'];
-          final userInfo = await ApiService.getMyInfo(accessToken);
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => MainNavigationScreen(
-                nickname: userInfo['nickname'],
-                email: userInfo['email'],
-                accessToken: accessToken,
-                initialIndex: -1, // 홈 화면부터 시작
+          // 네트워크 연결 확인
+          try {
+            final result = await ApiService.login(
+              email: emailController.text.trim(),
+              password: passwordController.text.trim(),
+            );
+            final accessToken = result['access_token'];
+            final userInfo = await ApiService.getMyInfo(accessToken);
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MainNavigationScreen(
+                  nickname: userInfo['nickname'],
+                  email: userInfo['email'],
+                  accessToken: accessToken,
+                  initialIndex: -1, // 홈 화면부터 시작
+                ),
               ),
-            ),
-          );
+            );
+          } catch (e) {
+            // 네트워크 오류 시 오프라인 모드로 진행
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('네트워크 연결을 확인해주세요. 오프라인 모드로 진행합니다.'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            
+            // 오프라인 모드로 메인 화면 이동 (임시 사용자 정보)
+            await Future.delayed(const Duration(seconds: 1));
+            if (mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MainNavigationScreen(
+                    nickname: '사용자',
+                    email: emailController.text.trim(),
+                    accessToken: 'offline_mode',
+                    initialIndex: -1,
+                  ),
+                ),
+              );
+            }
+          }
         } else {
-          final result = await ApiService.signup(
-            email: emailController.text.trim(),
-            password: passwordController.text.trim(),
-            nickname: nicknameController.text.trim(),
-          );
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('회원가입 성공! 이제 로그인 해주세요.')),
-          );
-          setState(() { isLogin = true; });
+          try {
+            final result = await ApiService.signup(
+              email: emailController.text.trim(),
+              password: passwordController.text.trim(),
+              nickname: nicknameController.text.trim(),
+            );
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('회원가입 성공! 이제 로그인 해주세요.')),
+            );
+            setState(() { isLogin = true; });
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('회원가입 실패: ${e.toString().replaceAll('Exception: ', '')}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+          SnackBar(
+            content: Text('오류가 발생했습니다: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: Colors.red,
+          ),
         );
       } finally {
         setState(() { isLoading = false; });

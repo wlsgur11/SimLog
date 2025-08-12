@@ -1,7 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'screens/splash_screen.dart';
 
 void main() {
+  // Flutter 바인딩 초기화
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // 시스템 UI 설정
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+  
+  // 전역 예외 처리 (간단하게)
+  FlutterError.onError = (FlutterErrorDetails details) {
+    // 오류 로그만 출력하고 앱은 계속 실행
+    print('Flutter Error: ${details.exception}');
+  };
+  
   runApp(const MyApp());
 }
 

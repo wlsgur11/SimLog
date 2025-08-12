@@ -7,6 +7,44 @@ class ApiService {
   
   // 개발용 로컬 URL (필요시 주석 해제)
   // static const String baseUrl = 'http://localhost:8000';
+  
+  // 서버 연결 테스트
+  static Future<bool> testConnection() async {
+    try {
+      final url = Uri.parse('$baseUrl/health');
+      final response = await http.get(url).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('연결 시간 초과');
+        },
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('서버 연결 테스트 실패: $e');
+      return false;
+    }
+  }
+  
+  // 서버 상태 확인 (health check)
+  static Future<Map<String, dynamic>> getServerStatus() async {
+    try {
+      final url = Uri.parse('$baseUrl/health');
+      final response = await http.get(url).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('연결 시간 초과');
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        return {'status': 'connected', 'message': '서버 연결됨'};
+      } else {
+        return {'status': 'error', 'message': '서버 응답 오류: ${response.statusCode}'};
+      }
+    } catch (e) {
+      return {'status': 'error', 'message': '연결 실패: $e'};
+    }
+  }
   // ===== Reports & Alerts =====
   static Future<Map<String, dynamic>> getConsent({required String accessToken}) async {
     final url = Uri.parse('$baseUrl/reports/consent');
@@ -55,11 +93,21 @@ class ApiService {
 
   static Future<Map<String, dynamic>> checkAlert({required String accessToken}) async {
     final url = Uri.parse('$baseUrl/alerts/check');
-    final response = await http.get(url, headers: {'Authorization': 'Bearer $accessToken'});
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('알림 체크 실패');
+    try {
+      final response = await http.get(url, headers: {'Authorization': 'Bearer $accessToken'});
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return {
+          'should_alert': false,
+          'error': 'alerts/check status ${response.statusCode}'
+        };
+      }
+    } catch (e) {
+      return {
+        'should_alert': false,
+        'error': 'alerts/check exception: $e'
+      };
     }
   }
 

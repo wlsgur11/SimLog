@@ -32,12 +32,22 @@ class RecordService:
         # AI 키워드 추출 (GPT-4o mini)
         ai_keywords = AIAnalysisService.extract_keywords_with_gpt(content)
         
+        # 1차 폴백: GPT 키워드가 비었으면 로컬 키워드 추출 사용
+        if not ai_keywords:
+            ai_keywords = RecordService._extract_keywords(content)
+        
         # AI 요약 생성 (GPT-4o mini 우선 사용)
         ai_summary = AIAnalysisService.generate_summary_with_ai(content)
         
         # 감정 분석 및 색상 생성 (AI API 우선 사용)
         emotion_analysis = AIAnalysisService.analyze_emotion_with_ai(content)
         
+        # 2차 폴백: 여전히 키워드가 비었으면 주감정을 최소 1개 키워드로 포함
+        if (not ai_keywords) and emotion_analysis:
+            primary_kw = emotion_analysis.get("primary_emotion")
+            if primary_kw:
+                ai_keywords = [primary_kw]
+
         # Record 생성
         record = Record(
             user_id=user_id,

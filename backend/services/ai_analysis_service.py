@@ -175,27 +175,59 @@ class AIAnalysisService:
     
     @staticmethod
     def extract_keywords_with_gpt(content: str) -> list:
-        """GPT-4o mini를 사용한 감정 키워드 추출"""
+        """GPT-4o mini를 사용한 감정 키워드 추출 (JSON 배열 파싱, 견고한 폴백 포함)"""
         try:
             api_key = os.getenv("OPENAI_API_KEY")
             if not api_key:
                 return []
             client = OpenAI(api_key=api_key)
             prompt = f"""
-            다음 텍스트에서 감정과 관련된 핵심 키워드 3~5개만 뽑아줘. 쉼표로 구분해서 반환해줘.
+            다음 텍스트에서 감정과 관련된 핵심 키워드 3~5개만 뽑아주세요.
+            반드시 아래 JSON 형식으로만, 추가 설명 없이 반환하세요.
+            {{
+              "keywords": ["키워드1", "키워드2", "키워드3"]
+            }}
+
             텍스트: {content}
-            키워드:
             """
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
-                max_tokens=50
+                temperature=0.2,
+                max_tokens=120
             )
-            keywords_str = response.choices[0].message.content.strip()
-            # 쉼표로 분리하여 리스트로 변환
-            keywords = [k.strip() for k in keywords_str.split(',') if k.strip()]
-            return keywords[:5]
+            raw = (response.choices[0].message.content or "").strip()
+            # 1) JSON 파싱 시도
+            try:
+                data = json.loads(raw)
+                kws = data.get("keywords", []) if isinstance(data, dict) else []
+            except Exception:
+                # 2) 본문에서 JSON 객체 추출 시도
+                import re
+                match = re.search(r"\{[\s\S]*\}", raw)
+                if match:
+                    try:
+                        data = json.loads(match.group(0))
+                        kws = data.get("keywords", []) if isinstance(data, dict) else []
+                    except Exception:
+                        kws = []
+                else:
+                    kws = []
+            # 3) 문자열로만 온 경우 대비: 쉼표 분리 폴백
+            if not kws and raw:
+                kws = [k.strip() for k in raw.split(',') if k.strip()]
+            # 정제: 중복 제거, 길이 제한
+            dedup = []
+            seen = set()
+            for k in kws:
+                if not isinstance(k, str):
+                    continue
+                k = k.strip()
+                if not k or k in seen:
+                    continue
+                seen.add(k)
+                dedup.append(k)
+            return dedup[:5]
         except Exception as e:
             print(f"GPT-4o mini 키워드 추출 오류: {str(e)}")
             return []
