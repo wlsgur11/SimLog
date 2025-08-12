@@ -139,15 +139,87 @@ class AIAnalysisService:
     
     @staticmethod
     def analyze_emotion_fallback(content: str) -> Dict:
-        """AI API 실패 시 기본 키워드 분석 사용"""
+        """AI API 실패 시 더 정확한 기본 감정 분석"""
+        # 부정적 키워드 기반 분석
+        negative_keywords = {
+            '힘들', '어렵', '스트레스', '피곤', '지치', '불안', '걱정', '우울', '슬픔', 
+            '화나', '짜증', '답답', '절망', '무기력', '의미없', '싫', '혐오', '두려움',
+            '무섭', '놀람', '충격', '실망', '후회', '미안', '죄송', '부끄러', '창피'
+        }
+        
+        positive_keywords = {
+            '기쁘', '행복', '즐겁', '신나', '좋', '만족', '감사', '희망', '기대', 
+            '설렘', '신뢰', '안전', '편안', '평온', '차분', '여유', '성취', '성공',
+            '자랑', '뿌듯', '감동', '감탄', '놀라', '신기', '재미', '웃음'
+        }
+        
+        content_lower = content.lower()
+        
+        # 키워드 점수 계산
+        negative_score = sum(1 for keyword in negative_keywords if keyword in content_lower)
+        positive_score = sum(1 for keyword in positive_keywords if keyword in content_lower)
+        
+        # 감정 결정
+        if negative_score > positive_score:
+            # 부정적 감정 중에서 세분화
+            if any(k in content_lower for k in ['힘들', '지치', '피곤', '무기력']):
+                primary_emotion = "슬픔"
+            elif any(k in content_lower for k in ['화나', '짜증', '답답']):
+                primary_emotion = "분노"
+            elif any(k in content_lower for k in ['불안', '걱정', '두려움', '무섭']):
+                primary_emotion = "두려움"
+            elif any(k in content_lower for k in ['놀람', '충격', '신기']):
+                primary_emotion = "놀람"
+            else:
+                primary_emotion = "슬픔"
+            intensity = min(10, max(1, negative_score * 2))
+        elif positive_score > negative_score:
+            primary_emotion = "기쁨"
+            intensity = min(10, max(1, positive_score * 2))
+        else:
+            # 중립적이거나 혼재된 경우
+            primary_emotion = "신뢰"
+            intensity = 5
+        
+        # 색상 정보 생성
         from services.emotion_color_service import EmotionColorService
-        return EmotionColorService.analyze_emotion_from_text(content)
+        color_info = EmotionColorService._get_color_with_intensity(primary_emotion, intensity)
+        
+        return {
+            "primary_emotion": primary_emotion,
+            "intensity": intensity,
+            "confidence": 0.6,  # 폴백이므로 신뢰도 낮게
+            "reasoning": f"키워드 분석 결과: 부정({negative_score}), 긍정({positive_score})",
+            "color": color_info,
+            "message": f"오늘의 감정색은 {color_info['name']}입니다~ (키워드 분석)",
+            "ai_used": False
+        }
     
     @staticmethod
     def generate_summary_fallback(content: str) -> str:
-        """AI API 실패 시 기본 요약 생성"""
-        from services.record_service import RecordService
-        return RecordService._generate_summary(content)
+        """AI API 실패 시 더 정확한 기본 요약 생성"""
+        # 감정 분석 결과를 기반으로 요약
+        emotion_analysis = AIAnalysisService.analyze_emotion_fallback(content)
+        primary_emotion = emotion_analysis["primary_emotion"]
+        
+        # 감정별 요약 템플릿 (더 정확한 매칭)
+        emotion_summaries = {
+            '기쁨': '긍정적이고 기쁜 감정을 느낀 하루였습니다.',
+            '신뢰': '안정감과 신뢰를 느낀 하루였습니다.',
+            '두려움': '불안하고 두려운 감정이 있었던 하루였습니다.',
+            '놀람': '예상치 못한 일로 놀란 하루였습니다.',
+            '슬픔': '슬프고 우울한 감정이 있었던 하루였습니다.',
+            '혐오': '불쾌하고 싫은 감정이 있었던 하루였습니다.',
+            '분노': '화가 나고 분노한 감정이 있었던 하루였습니다.',
+            '기대': '희망과 기대를 느낀 하루였습니다.'
+        }
+        
+        # 감정에 맞는 요약 반환
+        if primary_emotion in emotion_summaries:
+            return emotion_summaries[primary_emotion]
+        
+        # 기본 요약
+        return f"{primary_emotion}한 감정을 느낀 하루였습니다."
     
     @staticmethod
     def analyze_emotion_with_ai(content: str) -> Dict:
@@ -179,7 +251,7 @@ class AIAnalysisService:
         try:
             api_key = os.getenv("OPENAI_API_KEY")
             if not api_key:
-                return []
+                return AIAnalysisService._extract_keywords_fallback(content)
             client = OpenAI(api_key=api_key)
             prompt = f"""
             다음 텍스트에서 감정과 관련된 핵심 키워드 3~5개만 뽑아주세요.
@@ -227,10 +299,55 @@ class AIAnalysisService:
                     continue
                 seen.add(k)
                 dedup.append(k)
-            return dedup[:5]
+            
+            # 결과가 있으면 반환, 없으면 폴백 사용
+            if dedup:
+                return dedup[:5]
+            else:
+                return AIAnalysisService._extract_keywords_fallback(content)
+                
         except Exception as e:
             print(f"GPT-4o mini 키워드 추출 오류: {str(e)}")
-            return []
+            return AIAnalysisService._extract_keywords_fallback(content)
+    
+    @staticmethod
+    def _extract_keywords_fallback(content: str) -> list:
+        """키워드 추출 실패 시 감정 관련 키워드 추출"""
+        # 감정 관련 키워드 사전
+        emotion_keywords = {
+            '기쁨': ['기쁨', '행복', '즐거움', '신남', '좋음', '만족', '감사', '희망', '기대'],
+            '슬픔': ['슬픔', '우울', '힘듦', '지침', '피곤', '무기력', '절망', '실망'],
+            '분노': ['분노', '화남', '짜증', '답답', '열받음', '화가남'],
+            '두려움': ['두려움', '불안', '걱정', '무섭', '긴장', '스트레스'],
+            '놀람': ['놀람', '충격', '예상외', '신기', '놀라움'],
+            '신뢰': ['신뢰', '안전', '편안', '평온', '차분', '여유'],
+            '혐오': ['혐오', '싫음', '불쾌', '역겨움'],
+            '기대': ['기대', '설렘', '희망', '미래', '꿈']
+        }
+        
+        content_lower = content.lower()
+        found_keywords = []
+        
+        # 각 감정 카테고리에서 매칭되는 키워드 찾기
+        for emotion, keywords in emotion_keywords.items():
+            for keyword in keywords:
+                if keyword in content_lower:
+                    found_keywords.append(keyword)
+                    break  # 각 감정당 하나씩만
+        
+        # 추가로 일반적인 감정 표현 키워드
+        general_keywords = ['일', '하루', '생각', '느낌', '마음', '상태', '기분']
+        for keyword in general_keywords:
+            if keyword in content_lower and len(found_keywords) < 5:
+                found_keywords.append(keyword)
+        
+        # 최소 1개는 반환
+        if not found_keywords:
+            # 감정 분석 결과에서 primary_emotion을 키워드로 사용
+            emotion_analysis = AIAnalysisService.analyze_emotion_fallback(content)
+            found_keywords.append(emotion_analysis["primary_emotion"])
+        
+        return found_keywords[:5]
     
     @staticmethod
     def generate_average_color_name_with_gpt(emotion_records: list) -> str:
