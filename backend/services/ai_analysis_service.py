@@ -23,20 +23,15 @@ class AIAnalysisService:
         """GPT-4o mini를 사용한 감정 분석"""
         try:
             api_key = os.getenv("OPENAI_API_KEY")
-            print(f"🔍 OpenAI API Key 확인: {api_key[:10] if api_key else 'None'}...")
             if not api_key:
-                print("❌ OpenAI API 키가 설정되지 않았습니다.")
                 return None
             
-            print(f"🔍 OpenAI 클라이언트 생성 시도...")
             # 최신 openai 패키지와 호환되도록 수정
             try:
                 client = OpenAI(api_key=api_key)
-                print(f"✅ OpenAI 클라이언트 생성 성공")
             except TypeError as e:
                 if "proxies" in str(e):
                     # proxies 인자 문제가 있는 경우 기본 설정으로 생성
-                    print(f"⚠️ proxies 인자 문제 감지, 기본 설정으로 클라이언트 생성")
                     client = OpenAI(api_key=api_key, base_url="https://api.openai.com/v1")
                 else:
                     raise e
@@ -57,33 +52,21 @@ class AIAnalysisService:
             }}
             """
             
-            print(f"🤖 GPT-4o mini API 호출 시도...")
-            print(f"🔍 입력 텍스트: {content[:50]}...")
-            
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3
             )
             
-            print(f"✅ OpenAI API 응답 수신")
             content = response.choices[0].message.content
-            print(f"🔍 OpenAI 응답 내용: {content}")
             
             try:
                 result = json.loads(content)
-                print(f"✅ JSON 파싱 성공: {result}")
                 return result
             except json.JSONDecodeError as e:
-                print(f"❌ JSON 파싱 오류: {e}")
-                print(f"🔍 파싱 실패한 응답 내용: {content}")
                 return None
             
         except Exception as e:
-            print(f"❌ GPT-4o mini 감정 분석 오류: {str(e)}")
-            print(f"🔍 오류 타입: {type(e).__name__}")
-            import traceback
-            print(f"🔍 상세 오류: {traceback.format_exc()}")
             return None
     
     @staticmethod
@@ -123,7 +106,6 @@ class AIAnalysisService:
             return response.choices[0].message.content.strip()
             
         except Exception as e:
-            print(f"GPT-4o mini 요약 생성 오류: {str(e)}")
             return None
     
     @staticmethod
@@ -136,7 +118,6 @@ class AIAnalysisService:
             client_secret = os.getenv("CLOVA_CLIENT_SECRET")
             
             if not client_id or not client_secret:
-                print("CLOVA API 키가 설정되지 않았습니다.")
                 return None
             
             headers = {
@@ -162,13 +143,12 @@ class AIAnalysisService:
             return None
             
         except Exception as e:
-            print(f"CLOVA 음성 인식 오류: {str(e)}")
             return None
     
     @staticmethod
     def analyze_emotion_fallback(content: str) -> Dict:
         """AI API 실패 시 더 정확한 기본 감정 분석"""
-        print(f"🔄 폴백 감정 분석 시작: {content[:50]}...")
+
         
         # 부정적 키워드 기반 분석
         negative_keywords = {
@@ -190,7 +170,7 @@ class AIAnalysisService:
         negative_score = sum(1 for keyword in negative_keywords if keyword in content_lower)
         positive_score = sum(1 for keyword in positive_keywords if keyword in content_lower)
         
-        print(f"📊 키워드 분석 결과: 부정({negative_score}), 긍정({positive_score})")
+
         
         # 감정 결정 (수정된 로직)
         if negative_score > positive_score:
@@ -218,7 +198,7 @@ class AIAnalysisService:
                 primary_emotion = "슬픔"
             intensity = 5
         
-        print(f"🎯 폴백 분석 결과: {primary_emotion} (강도: {intensity})")
+
         
         # 색상 정보 생성
         from services.emotion_color_service import EmotionColorService
@@ -237,7 +217,7 @@ class AIAnalysisService:
     @staticmethod
     def generate_summary_fallback(content: str) -> str:
         """AI API 실패 시 더 정확한 기본 요약 생성"""
-        print(f"🔄 요약 폴백 생성 시작: {content[:50]}...")
+
         
         # 감정 분석 결과를 기반으로 요약
         emotion_analysis = AIAnalysisService.analyze_emotion_fallback(content)
@@ -258,27 +238,21 @@ class AIAnalysisService:
         # 감정에 맞는 요약 반환
         if primary_emotion in emotion_summaries:
             summary = emotion_summaries[primary_emotion]
-            print(f"🎯 요약 폴백 결과: {summary}")
             return summary
         
         # 기본 요약
         summary = f"{primary_emotion}한 감정을 느낀 하루였습니다."
-        print(f"🎯 요약 폴백 결과: {summary}")
         return summary
     
     @staticmethod
     def analyze_emotion_with_ai(content: str) -> Dict:
         """GPT-4o mini를 우선 사용하고, 실패 시 기본 분석 사용"""
-        print(f"🔍 AI 감정 분석 시작: {content[:50]}...")
-        
         # GPT-4o mini 시도
         result = AIAnalysisService.analyze_emotion_with_gpt4o(content)
         if result:
-            print("✅ AI 분석 성공!")
             return AIAnalysisService._convert_ai_result_to_color(result)
         
         # 기본 분석 사용
-        print("⚠️ AI 분석 실패, 폴백 분석 사용")
         fallback_result = AIAnalysisService.analyze_emotion_fallback(content)
         fallback_result["ai_failed"] = True
         fallback_result["error_message"] = "AI API 호출에 실패하여 키워드 기반 분석을 사용했습니다."
@@ -358,13 +332,12 @@ class AIAnalysisService:
                 return AIAnalysisService._extract_keywords_fallback(content)
                 
         except Exception as e:
-            print(f"GPT-4o mini 키워드 추출 오류: {str(e)}")
             return AIAnalysisService._extract_keywords_fallback(content)
     
     @staticmethod
     def _extract_keywords_fallback(content: str) -> list:
         """키워드 추출 실패 시 감정 관련 키워드 추출"""
-        print(f"🔄 키워드 폴백 추출 시작: {content[:50]}...")
+
         
         # 감정 관련 키워드 사전
         emotion_keywords = {
@@ -400,7 +373,6 @@ class AIAnalysisService:
         if not found_keywords:
             found_keywords.append(primary_emotion)
         
-        print(f"🎯 키워드 폴백 결과: {found_keywords}")
         return found_keywords[:5]
     
     @staticmethod
@@ -442,7 +414,6 @@ class AIAnalysisService:
             return response.choices[0].message.content.strip()
             
         except Exception as e:
-            print(f"GPT-4o mini 평균 색상 이름 생성 오류: {str(e)}")
             return "평균 감정색"
     
     @staticmethod

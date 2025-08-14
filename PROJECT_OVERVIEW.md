@@ -1,28 +1,8 @@
-# SimLog (심로그) 🌸
-
-**심리 감정 기록 및 AI 분석 플랫폼**
-
-감정 표현이 서툰 청년층을 위한 비대면·비실명 감정 기록 및 AI 기반 피드백 시스템
-
----
+# SimLog 프로젝트 개요
 
 ## 📱 프로젝트 소개
 
 SimLog는 AI 기반 감정 분석과 마음 건강 관리를 위한 모바일 애플리케이션입니다. 사용자의 일기 내용을 분석하여 감정 상태를 파악하고, 필요시 전문가 상담을 연결하는 서비스입니다.
-
----
-
- 
-
-## 🧭 시스템 아키텍처
-
-<div align="center">
-
-<img src="docs/pic/simlog_architecture.png" alt="SimLog Architecture" width="85%" />
-
-</div>
-
----
 
 ## 🏗️ 기술 스택
 
@@ -66,8 +46,6 @@ SimLog는 AI 기반 감정 분석과 마음 건강 관리를 위한 모바일 �
 - **iOS**: iOS 지원
 - **Java**: Java 개발 환경
 - **Gradle**: Android 빌드 도구
-
-
 
 ## 🚀 핵심 기능
 
@@ -129,8 +107,6 @@ SimLog는 AI 기반 감정 분석과 마음 건강 관리를 위한 모바일 �
 - **강제 알림 표시**: 개발 및 테스트를 위한 알림 모달 강제 표시
 - **디버그 모드**: API 상태 및 AI 분석 결과 확인
 
----
-
 ## 🔧 기술적 특징
 
 ### AI 분석 시스템
@@ -161,32 +137,6 @@ SimLog는 AI 기반 감정 분석과 마음 건강 관리를 위한 모바일 �
 - **로딩 상태**: 사용자 경험 향상을 위한 로딩 표시
 - **에러 복구**: 네트워크 오류 시 자동 재시도
 
----
-
-## 📸 앱 스크린샷
-
-<div align="center">
-
-<img src="docs/pic/로그인.png" alt="로그인" width="30%" />
-<img src="docs/pic/홈화면.png" alt="홈 화면" width="30%" />
-<img src="docs/pic/일기작성1.png" alt="일기 작성 1" width="30%" />
-<br/>
-<img src="docs/pic/일기작성2.png" alt="일기 작성 2" width="30%" />
-<img src="docs/pic/일기 작성 결과.png" alt="일기 작성 결과" width="30%" />
-<img src="docs/pic/감정 분석.png" alt="감정 분석" width="30%" />
-<br/>
-<img src="docs/pic/마음정원.png" alt="마음정원" width="30%" />
-<img src="docs/pic/마음정원상점.png" alt="마음정원 상점" width="30%" />
-<img src="docs/pic/마음정원인벤토리.png" alt="마음정원 인벤토리" width="30%" />
-<br/>
-<img src="docs/pic/마음 체크.png" alt="마음 체크" width="30%" />
-<img src="docs/pic/7일 우울 지속 모달.png" alt="7일 우울 지속 모달" width="30%" />
-<img src="docs/pic/7일 요약 url 생성.png" alt="7일 요약 URL 생성" width="30%" />
-
-</div>
-
----
-
 ## 📊 데이터 구조
 
 ### 주요 모델
@@ -204,60 +154,6 @@ SimLog는 AI 기반 감정 분석과 마음 건강 관리를 위한 모바일 �
 - **Color Mapping**: 감정별 색상 정보
 - **Keywords**: 추출된 핵심 키워드
 
----
-
-## 🏗 프로젝트 구조
-
-### 📁 폴더 구조
-
-```
-SimLog/
-├── backend/                 # FastAPI 백엔드
-│   ├── controllers/         # API 엔드포인트
-│   ├── models/              # DB 모델
-│   ├── services/            # 비즈니스 로직
-│   ├── main.py              # 진입점
-│   ├── database.py          # 데이터베이스 연결
-│   ├── requirements.txt     # 의존성
-│   └── venv/                # Python 가상환경
-├── frontend/                # Flutter 프론트엔드
-│   ├── lib/                 # Dart 소스 코드
-│   │   ├── screens/         # 주요 화면
-│   │   └── services/        # API 연동
-│   ├── assets/              # 리소스 파일
-│   │   ├── fonts/           # 폰트 파일
-│   │   └── images/          # 이미지 리소스
-│   ├── android/             # Android 플랫폼
-│   ├── ios/                 # iOS 플랫폼
-│   ├── web/                 # 웹 플랫폼
-│   ├── pubspec.yaml         # Flutter 의존성
-│   └── analysis_options.yaml # Dart 분석 설정
-└── docs/                    # 문서
-    └── PROJECT_OVERVIEW.md  # 프로젝트 상세 개요
-```
-
----
-
-## ⚡️ 실행 방법
-
-### 1. 백엔드
-```bash
-cd backend
-pip install -r requirements.txt
-# .env 파일 설정 (DB, OPENAI, CLOVA 등)
-uvicorn main:app --reload
-```
-
-### 2. 프론트엔드 (Flutter)
-```bash
-cd frontend
-flutter pub get
-# 모바일: flutter run
-# 웹: flutter run -d chrome
-```
-
----
-
 ## 🚀 배포 및 운영
 
 ### 배포 환경
@@ -272,8 +168,6 @@ flutter pub get
 - **API 상태**: OpenAI API 키 상태 확인
 - **에러 로깅**: 상세한 에러 추적 및 디버깅
 - **사용자 피드백**: AI 분석 실패 시 명확한 피드백 제공
-
----
 
 ## 🔮 향후 발전 방향
 
@@ -319,28 +213,4 @@ flutter pub get
 
 ---
 
-## 🤝 기여하기
-1. Fork & Branch
-2. 기능 개발 후 PR
-3. 코드리뷰/병합
-
----
-
-## 📞 문의
-- [개발자 이메일](octopus121@pusan.ac.kr)
-
----
-
-## 👨‍💻 개발자
-
-<div align="center">
-
-| [문진혁](https://github.com/wlsgur11) |
-| :------------------------------------: |
-| <img src="https://github.com/wlsgur11.png" width="100"> |
-
-</div>
-
----
-
-*SimLog는 AI 기술을 활용하여 사용자의 마음 건강을 돕는 혁신적인 모바일 애플리케이션입니다. 현재는 부산대학교를 시작으로, 향후 다양한 기관과의 연계를 통해 더 많은 사람들에게 마음 건강 관리 서비스를 제공할 예정입니다.* 
+*SimLog는 AI 기술을 활용하여 사용자의 마음 건강을 돕는 혁신적인 모바일 애플리케이션입니다. 현재는 부산대학교를 시작으로, 향후 다양한 기관과의 연계를 통해 더 많은 사람들에게 마음 건강 관리 서비스를 제공할 예정입니다.*

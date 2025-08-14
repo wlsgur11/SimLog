@@ -32,6 +32,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   
   bool _alertChecked = false;
   bool _isDeveloper = false; // 개발자 여부 추가
+  String? _nickname;
+  String? _email;
 
   @override
   void initState() {
@@ -89,15 +91,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<void> _loadUserInfo() async {
     try {
       final userInfo = await ApiService.getMyInfo(widget.accessToken);
-      print("🔍 사용자 정보 로드: $userInfo"); // 디버깅 로그 추가
       if (mounted) {
         setState(() {
           _isDeveloper = userInfo['is_developer'] ?? false;
+          _nickname = userInfo['nickname'] as String?;
+          _email = userInfo['email'] as String?;
         });
-        print("🔍 개발자 여부: $_isDeveloper"); // 디버깅 로그 추가
       }
     } catch (e) {
-      print("❌ 사용자 정보 로드 실패: $e"); // 디버깅 로그 추가
       // 사용자 정보 로드 실패 시 기본값 사용
       if (mounted) {
         setState(() {
@@ -182,9 +183,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    widget.nickname != null
-                                        ? '환영합니다, ${widget.nickname}님!'
-                                        : (widget.email != null ? '환영합니다, ${widget.email}!' : 'SimLog에 오신 것을 환영합니다!'),
+                                  _nickname != null
+                                      ? '환영합니다, ${_nickname}님!'
+                                      : ( (_email ?? widget.email) != null ? '환영합니다, ${_email ?? widget.email}!' : 'SimLog에 오신 것을 환영합니다!'),
                                     style: TextStyle(
                                       fontSize: screenWidth > 600 ? 32.0 : 28.0, // 28.0 -> 32.0, 24.0 -> 28.0
                                       fontWeight: FontWeight.bold,
@@ -463,7 +464,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _refreshUserInfo() async {
-    print("🔄 사용자 정보 강제 새로고침 시작");
     await _loadUserInfo();
   }
 

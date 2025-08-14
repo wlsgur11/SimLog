@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
+import '../services/api_service.dart';
 import 'edit_profile_screen.dart';
 import 'app_settings_screen.dart';
 import 'notification_settings_screen.dart';
@@ -21,6 +22,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  String? _nickname;
+  String? _email;
 
   @override
   void initState() {
@@ -52,6 +55,9 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     
     _fadeController.forward();
     _slideController.forward();
+
+    // 사용자 정보 로드
+    _loadUserInfo();
   }
 
   @override
@@ -59,6 +65,23 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     _fadeController.dispose();
     _slideController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final info = await ApiService.getMyInfo(widget.accessToken);
+      if (!mounted) return;
+      setState(() {
+        _nickname = info['nickname'] as String?;
+        _email = info['email'] as String?;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _nickname = widget.nickname;
+        _email = widget.email;
+      });
+    }
   }
 
   @override
@@ -165,7 +188,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.nickname ?? '설정되지 않음',
+                          _nickname ?? widget.nickname ?? '설정되지 않음',
                           style: TextStyle(
                             fontSize: isTablet ? 24 : 20,
                             fontWeight: FontWeight.bold,
@@ -174,7 +197,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          widget.email ?? '설정되지 않음',
+                          _email ?? widget.email ?? '설정되지 않음',
                           style: TextStyle(
                             fontSize: isTablet ? 16 : 14,
                             color: Colors.white.withOpacity(0.8),
@@ -235,6 +258,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   ),
                 ),
               );
+              if (result == true) {
+                // 편집 후 사용자 정보 재로드
+                await _loadUserInfo();
+              }
             },
           ),
           _buildDivider(),
