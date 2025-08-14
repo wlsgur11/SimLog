@@ -82,7 +82,7 @@ SimLog는 AI 기반 감정 분석과 마음 건강 관리를 위한 모바일 �
 
 - **GPT-4o mini 기반 분석**:
     - 감정 분류 (Robert Plutchik's Wheel of Emotions)
-      - <img src="docs/아키텍쳐/감정의 바퀴.png" alt="로그인" width="30%" />
+      - <img src="docs/아키텍쳐/감정의 바퀴.png" alt="로그인" width="50%" />
     - 텍스트 요약
     - 키워드 추출
 - **Fallback 메커니즘**: AI API 실패 시 키워드 기반 분석
