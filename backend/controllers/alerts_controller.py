@@ -81,6 +81,26 @@ def check_negative_alert(
         return {"should_alert": False, "error": f"alerts/check fallback: {str(e)}"}
 
 
+@router.get("/test/force-show")
+def force_show_alert_for_testing(
+    current_user: User = Depends(get_current_user)
+):
+    """개발자 테스트용: 7일 억제 무시하고 강제로 알림 표시"""
+    # 개발자 계정인지 확인
+    if not current_user.is_developer:
+        raise HTTPException(status_code=403, detail="개발자 계정만 사용할 수 있습니다.")
+    
+    return {
+        "should_alert": True,
+        "period": 7,
+        "negative_ratio": 0.85,
+        "days_negative": 6,
+        "message": "최근 오래도록 힘든 감정이 이어졌어요. 잠깐 숨 고르며 마음을 돌보는 시간이 필요할지 몰라요.",
+        "form_url": "https://forms.gle/RM8vijEWkqgPo1de9",
+        "is_test": True
+    }
+
+
 @router.post("/ack")
 def acknowledge_alert(
     db: Session = Depends(get_db),

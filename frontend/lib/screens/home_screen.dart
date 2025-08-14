@@ -29,7 +29,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _bounceAnimation;
+  
   bool _alertChecked = false;
+  bool _isDeveloper = false; // 개발자 여부 추가
 
   @override
   void initState() {
@@ -75,10 +77,31 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _slideController.forward();
     _bounceController.forward();
 
+    // 사용자 정보 가져오기 (개발자 여부 확인)
+    _loadUserInfo();
+
     // 알림 체크 (첫 진입 시 1회)
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _maybeShowKindAlert();
     });
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final userInfo = await ApiService.getMyInfo(widget.accessToken);
+      if (mounted) {
+        setState(() {
+          _isDeveloper = userInfo['is_developer'] ?? false;
+        });
+      }
+    } catch (e) {
+      // 사용자 정보 로드 실패 시 기본값 사용
+      if (mounted) {
+        setState(() {
+          _isDeveloper = false;
+        });
+      }
+    }
   }
 
   @override
@@ -250,6 +273,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           subtitleFontSize,
                           () => widget.onNavTap?.call(2),
                         ),
+                        // 개발자 테스트용 알림 버튼
+                        if (_isDeveloper) // 개발자 여부에 따라 표시
+                          _buildActionCard(
+                            context,
+                            Icons.bug_report,
+                            '테스트 알림',
+                            '7일 우울 알림 모달 테스트',
+                            const Color(0xFFFF5722),
+                            iconSize,
+                            cardPadding,
+                            titleFontSize,
+                            subtitleFontSize,
+                            _forceShowAlertForTesting,
+                          ),
                       ],
                     ),
                   ),
@@ -276,6 +313,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }
     } catch (_) {
       // 무시: 알림 실패해도 앱 흐름엔 영향 없음
+    }
+  }
+
+  Future<void> _forceShowAlertForTesting() async {
+    try {
+      final result = await ApiService.forceShowAlertForTesting(accessToken: widget.accessToken);
+      if (result['should_alert'] == true) {
+        if (!mounted) return;
+        _showKindAlertModal(
+          message: (result['message'] as String?) ?? '개발자 테스트용 알림입니다.',
+          formUrl: (result['form_url'] as String?) ?? 'https://forms.gle/RM8vijEWkqgPo1de9',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('테스트 알림 표시 실패: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

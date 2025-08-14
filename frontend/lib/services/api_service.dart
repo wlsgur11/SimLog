@@ -93,21 +93,28 @@ class ApiService {
 
   static Future<Map<String, dynamic>> checkAlert({required String accessToken}) async {
     final url = Uri.parse('$baseUrl/alerts/check');
-    try {
-      final response = await http.get(url, headers: {'Authorization': 'Bearer $accessToken'});
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        return {
-          'should_alert': false,
-          'error': 'alerts/check status ${response.statusCode}'
-        };
-      }
-    } catch (e) {
-      return {
-        'should_alert': false,
-        'error': 'alerts/check exception: $e'
-      };
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $accessToken'},
+    );
+    if (response.status_code == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('알림 확인 실패');
+    }
+  }
+
+  static Future<Map<String, dynamic>> forceShowAlertForTesting({required String accessToken}) async {
+    final url = Uri.parse('$baseUrl/alerts/test/force-show');
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $accessToken'},
+    );
+    if (response.status_code == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final body = jsonDecode(response.body);
+      throw Exception(body['detail'] ?? '테스트 알림 표시 실패');
     }
   }
 
