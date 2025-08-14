@@ -165,25 +165,41 @@ SimLog는 AI 기반 감정 분석과 마음 건강 관리를 위한 모바일 �
 
 ## 📸 앱 스크린샷
 
+### 🔐 로그인 및 홈 화면
 <div align="center">
 
 <img src="docs/pic/로그인.png" alt="로그인" width="30%" />
 <img src="docs/pic/홈화면.png" alt="홈 화면" width="30%" />
 <img src="docs/pic/일기작성1.png" alt="일기 작성 1" width="30%" />
-<br/>
+</div>
+*JWT 기반 보안 로그인과 직관적인 홈 화면. 일기 작성, 감정 분석, 마음 정원, 내 정보로의 빠른 접근을 제공합니다.*
+
+### 📝 일기 작성 및 감정 분석
+<div align="center">
+
 <img src="docs/pic/일기작성2.png" alt="일기 작성 2" width="30%" />
 <img src="docs/pic/일기 작성 결과.png" alt="일기 작성 결과" width="30%" />
 <img src="docs/pic/감정 분석.png" alt="감정 분석" width="30%" />
-<br/>
+</div>
+*AI 기반 감정 분석으로 일기 내용을 실시간 분석하여 감정 색상과 키워드를 제공합니다. 7일간의 감정 변화 추이를 시각적으로 확인할 수 있습니다.*
+
+### 🌱 마음 정원 시스템
+<div align="center">
+
 <img src="docs/pic/마음정원.png" alt="마음정원" width="30%" />
 <img src="docs/pic/마음정원상점.png" alt="마음정원 상점" width="30%" />
 <img src="docs/pic/마음정원인벤토리.png" alt="마음정원 인벤토리" width="30%" />
-<br/>
+</div>
+*게이미피케이션을 통한 지속적 사용 장려. 출석 체크로 씨앗을 모아 정원을 꾸미고, 상점에서 다양한 아이템을 구매하여 개인화된 정원을 만들 수 있습니다.*
+
+### 🧠 마음 건강 관리
+<div align="center">
+
 <img src="docs/pic/마음 체크.png" alt="마음 체크" width="30%" />
 <img src="docs/pic/7일 우울 지속 모달.png" alt="7일 우울 지속 모달" width="30%" />
 <img src="docs/pic/7일 요약 url 생성.png" alt="7일 요약 URL 생성" width="30%" />
-
 </div>
+*지속적인 부정 감정 감지 시 상담 연결을 제안하고, 7일 요약을 생성하여 전문가와 공유할 수 있습니다. 상담사와의 원활한 소통을 지원합니다.*
 
 ---
 
