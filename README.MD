@@ -26,7 +26,7 @@ SimLog는 AI 기반 감정 분석과 마음 건강 관리를 위한 모바일 �
 
 <div align="center">
 
-<img src="docs/아키텍쳐/데이터 흐름도.png" alt="Data Flow Diagram" width="85%" />
+<img src="docs/아키텍쳐/데이터 흐름도.png" alt="Data Flow Diagram" width="70%" />
 
 </div>
 
