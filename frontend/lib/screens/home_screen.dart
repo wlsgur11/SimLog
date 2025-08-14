@@ -436,40 +436,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           final sharePath = created['share_path'] as String;
                           final shareUrl = '${ApiService.baseUrl}$sharePath';
                           
-                          // 폼 열기
-                          try {
-                            final uri = Uri.parse(formUrl);
-                            if (await canLaunchUrl(uri)) {
-                              final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-                              if (!launched) {
-                                await launchUrl(uri, mode: LaunchMode.inAppWebView);
-                              }
-                            } else {
-                              await Clipboard.setData(ClipboardData(text: formUrl));
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('링크가 클립보드에 복사되었습니다. 브라우저에서 직접 열어주세요.'),
-                                    duration: Duration(seconds: 5),
-                                  ),
-                                );
-                              }
-                            }
-                          } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('링크를 열 수 없습니다: ${e.toString()}'),
-                                  backgroundColor: Colors.red,
-                                  duration: const Duration(seconds: 3),
-                                ),
-                              );
-                            }
+                          // 요약 링크 생성 결과 화면 표시
+                          if (mounted) {
+                            _showShareResult(shareUrl);
                           }
                           
                           // 7일 억제
                           try { await ApiService.ackAlert(accessToken: widget.accessToken); } catch (_) {}
-                          if (mounted) Navigator.of(context).pop();
+                          
                         } catch (e) {
                           setState(() => loading = false);
                           if (mounted) {
@@ -488,6 +462,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  Future<void> _refreshUserInfo() async {
+    print("🔄 사용자 정보 강제 새로고침 시작");
+    await _loadUserInfo();
+  }
+
   void _showShareResult(String shareUrl) {
     showDialog(
       context: context,
@@ -499,7 +478,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('상담 선생님께 직접 보여드리거나 전달해 주세요. (7일 후 자동 만료)'),
+              const Text('상담 선생님께 직접 보여주거나 전달해 주세요. (7일 후 자동 만료)'),
               const SizedBox(height: 10),
               SelectableText(shareUrl, style: const TextStyle(fontSize: 14, color: Colors.blue)),
             ],
@@ -516,17 +495,65 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
             TextButton(
               onPressed: () async {
-                final uri = Uri.parse(shareUrl);
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                try {
+                  final uri = Uri.parse(shareUrl);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  } else {
+                    await Clipboard.setData(ClipboardData(text: shareUrl));
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('링크가 클립보드에 복사되었습니다')),
+                      );
+                    }
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('링크 열기 실패: $e')),
+                    );
+                  }
                 }
               },
               child: const Text('열기'),
             ),
             FilledButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('닫기'),
-            )
+              onPressed: () async {
+                // 모달 닫기
+                Navigator.of(ctx).pop();
+                // 마음체크 폼으로 이동
+                try {
+                  final uri = Uri.parse('https://forms.gle/RM8vijEWkqgPo1de9');
+                  if (await canLaunchUrl(uri)) {
+                    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    if (!launched) {
+                      await launchUrl(uri, mode: LaunchMode.inAppWebView);
+                    }
+                  } else {
+                    await Clipboard.setData(ClipboardData(text: 'https://forms.gle/RM8vijEWkqgPo1de9'));
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('링크가 클립보드에 복사되었습니다. 브라우저에서 직접 열어주세요.'),
+                          duration: Duration(seconds: 5),
+                        ),
+                      );
+                    }
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('링크를 열 수 없습니다: ${e.toString()}'),
+                        backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('마음체크 하기'),
+            ),
           ],
         );
       },
