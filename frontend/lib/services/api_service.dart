@@ -97,7 +97,7 @@ class ApiService {
       url,
       headers: {'Authorization': 'Bearer $accessToken'},
     );
-    if (response.status_code == 200) {
+    if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
       throw Exception('알림 확인 실패');
@@ -110,7 +110,7 @@ class ApiService {
       url,
       headers: {'Authorization': 'Bearer $accessToken'},
     );
-    if (response.status_code == 200) {
+    if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
       final body = jsonDecode(response.body);

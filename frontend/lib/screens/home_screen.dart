@@ -89,12 +89,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<void> _loadUserInfo() async {
     try {
       final userInfo = await ApiService.getMyInfo(widget.accessToken);
+      print("🔍 사용자 정보 로드: $userInfo"); // 디버깅 로그 추가
       if (mounted) {
         setState(() {
           _isDeveloper = userInfo['is_developer'] ?? false;
         });
+        print("🔍 개발자 여부: $_isDeveloper"); // 디버깅 로그 추가
       }
     } catch (e) {
+      print("❌ 사용자 정보 로드 실패: $e"); // 디버깅 로그 추가
       // 사용자 정보 로드 실패 시 기본값 사용
       if (mounted) {
         setState(() {
