@@ -97,7 +97,6 @@ class ReportService:
             negative_ratio = cache.negative_ratio or 0.0
         else:
             # 2) 캐시가 없거나 비어 있으면 최근 period_days 내 기록으로 즉석 요약 생성
-            from datetime import datetime, timedelta
             from models.record import Record
 
             end_dt = datetime.now()

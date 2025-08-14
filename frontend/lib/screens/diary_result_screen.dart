@@ -13,6 +13,11 @@ class DiaryResultScreen extends StatelessWidget {
     final colorName = colorInfo['name'] ?? '알 수 없음';
     final colorHex = colorInfo['hex'] ?? '#CCCCCC';
     final primaryEmotion = emotion['primary_emotion'] ?? '';
+    
+    // AI 실패 여부 확인
+    final aiFailed = emotion['ai_failed'] ?? false;
+    final errorMessage = emotion['error_message'] ?? '';
+    final aiUsed = emotion['ai_used'] ?? false;
 
     Color parseColor(String hex) {
       hex = hex.replaceAll('#', '');
@@ -28,12 +33,55 @@ class DiaryResultScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            // AI 실패 경고 메시지
+            if (aiFailed) ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  border: Border.all(color: Colors.orange, width: 1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning, color: Colors.orange),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'AI 분석에 실패하여 키워드 기반 분석을 사용했습니다.',
+                        style: TextStyle(color: Colors.orange[800], fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            
+            // 분석 방법 표시
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: aiUsed ? Colors.green.withOpacity(0.1) : Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                aiUsed ? '🤖 AI 분석' : '🔍 키워드 분석',
+                style: TextStyle(
+                  color: aiUsed ? Colors.green[700] : Colors.blue[700],
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
             // 오늘의 감정색 문구
-                              Text(
-                    '오늘의 감정색은 $colorName 입니다',
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
+            Text(
+              '오늘의 감정색은 $colorName 입니다',
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 32),
             // 색상 강조 (더 큰 원)
             Container(
@@ -45,10 +93,10 @@ class DiaryResultScreen extends StatelessWidget {
                 border: Border.all(color: Colors.black12, width: 2),
               ),
               alignment: Alignment.center,
-                                   child: Text(
-                       colorName,
-                       style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
-                     ),
+              child: Text(
+                colorName,
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
+              ),
             ),
             const SizedBox(height: 32),
             // AI 한줄요약

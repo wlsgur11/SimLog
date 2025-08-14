@@ -25,7 +25,7 @@ class AIAnalysisService:
             api_key = os.getenv("OPENAI_API_KEY")
             print(f"OpenAI API Key 확인: {api_key[:10] if api_key else 'None'}...")
             if not api_key:
-                print("OpenAI API 키가 설정되지 않았습니다.")
+                print("❌ OpenAI API 키가 설정되지 않았습니다.")
                 return None
             
             client = OpenAI(api_key=api_key)
@@ -46,6 +46,7 @@ class AIAnalysisService:
             }}
             """
             
+            print(f"🤖 GPT-4o mini API 호출 시도...")
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[{"role": "user", "content": prompt}],
@@ -53,17 +54,17 @@ class AIAnalysisService:
             )
             
             content = response.choices[0].message.content
-            print(f"OpenAI 응답: {content}")
+            print(f"✅ OpenAI 응답: {content}")
             
             try:
                 return json.loads(content)
             except json.JSONDecodeError as e:
-                print(f"JSON 파싱 오류: {e}")
+                print(f"❌ JSON 파싱 오류: {e}")
                 print(f"응답 내용: {content}")
                 return None
             
         except Exception as e:
-            print(f"GPT-4o mini 감정 분석 오류: {str(e)}")
+            print(f"❌ GPT-4o mini 감정 분석 오류: {str(e)}")
             return None
     
     @staticmethod
@@ -140,11 +141,14 @@ class AIAnalysisService:
     @staticmethod
     def analyze_emotion_fallback(content: str) -> Dict:
         """AI API 실패 시 더 정확한 기본 감정 분석"""
+        print(f"🔄 폴백 감정 분석 시작: {content[:50]}...")
+        
         # 부정적 키워드 기반 분석
         negative_keywords = {
             '힘들', '어렵', '스트레스', '피곤', '지치', '불안', '걱정', '우울', '슬픔', 
             '화나', '짜증', '답답', '절망', '무기력', '의미없', '싫', '혐오', '두려움',
-            '무섭', '놀람', '충격', '실망', '후회', '미안', '죄송', '부끄러', '창피'
+            '무섭', '놀람', '충격', '실망', '후회', '미안', '죄송', '부끄러', '창피',
+            '죽고싶', '자살', '끝내', '그만', '싫어', '힘들어', '지쳐', '피곤해'
         }
         
         positive_keywords = {
@@ -159,10 +163,12 @@ class AIAnalysisService:
         negative_score = sum(1 for keyword in negative_keywords if keyword in content_lower)
         positive_score = sum(1 for keyword in positive_keywords if keyword in content_lower)
         
-        # 감정 결정
+        print(f"📊 키워드 분석 결과: 부정({negative_score}), 긍정({positive_score})")
+        
+        # 감정 결정 (수정된 로직)
         if negative_score > positive_score:
             # 부정적 감정 중에서 세분화
-            if any(k in content_lower for k in ['힘들', '지치', '피곤', '무기력']):
+            if any(k in content_lower for k in ['힘들', '지치', '피곤', '무기력', '절망', '죽고싶']):
                 primary_emotion = "슬픔"
             elif any(k in content_lower for k in ['화나', '짜증', '답답']):
                 primary_emotion = "분노"
@@ -177,9 +183,15 @@ class AIAnalysisService:
             primary_emotion = "기쁨"
             intensity = min(10, max(1, positive_score * 2))
         else:
-            # 중립적이거나 혼재된 경우
-            primary_emotion = "신뢰"
+            # 중립적이거나 혼재된 경우 - 더 정확한 판단
+            if negative_score == 0 and positive_score == 0:
+                primary_emotion = "신뢰"  # 정말 중립적인 경우만
+            else:
+                # 혼재된 경우 부정적 감정 우선
+                primary_emotion = "슬픔"
             intensity = 5
+        
+        print(f"🎯 폴백 분석 결과: {primary_emotion} (강도: {intensity})")
         
         # 색상 정보 생성
         from services.emotion_color_service import EmotionColorService
@@ -189,7 +201,7 @@ class AIAnalysisService:
             "primary_emotion": primary_emotion,
             "intensity": intensity,
             "confidence": 0.6,  # 폴백이므로 신뢰도 낮게
-            "reasoning": f"키워드 분석 결과: 부정({negative_score}), 긍정({positive_score})",
+            "reasoning": f"키워드 분석 결과: 부정({negative_score}), 긍정({positive_score}) - 폴백 분석 사용",
             "color": color_info,
             "message": f"오늘의 감정색은 {color_info['name']}입니다~ (키워드 분석)",
             "ai_used": False
@@ -198,6 +210,8 @@ class AIAnalysisService:
     @staticmethod
     def generate_summary_fallback(content: str) -> str:
         """AI API 실패 시 더 정확한 기본 요약 생성"""
+        print(f"🔄 요약 폴백 생성 시작: {content[:50]}...")
+        
         # 감정 분석 결과를 기반으로 요약
         emotion_analysis = AIAnalysisService.analyze_emotion_fallback(content)
         primary_emotion = emotion_analysis["primary_emotion"]
@@ -216,22 +230,32 @@ class AIAnalysisService:
         
         # 감정에 맞는 요약 반환
         if primary_emotion in emotion_summaries:
-            return emotion_summaries[primary_emotion]
+            summary = emotion_summaries[primary_emotion]
+            print(f"🎯 요약 폴백 결과: {summary}")
+            return summary
         
         # 기본 요약
-        return f"{primary_emotion}한 감정을 느낀 하루였습니다."
+        summary = f"{primary_emotion}한 감정을 느낀 하루였습니다."
+        print(f"🎯 요약 폴백 결과: {summary}")
+        return summary
     
     @staticmethod
     def analyze_emotion_with_ai(content: str) -> Dict:
         """GPT-4o mini를 우선 사용하고, 실패 시 기본 분석 사용"""
+        print(f"🔍 AI 감정 분석 시작: {content[:50]}...")
         
         # GPT-4o mini 시도
         result = AIAnalysisService.analyze_emotion_with_gpt4o(content)
         if result:
+            print("✅ AI 분석 성공!")
             return AIAnalysisService._convert_ai_result_to_color(result)
         
         # 기본 분석 사용
-        return AIAnalysisService.analyze_emotion_fallback(content)
+        print("⚠️ AI 분석 실패, 폴백 분석 사용")
+        fallback_result = AIAnalysisService.analyze_emotion_fallback(content)
+        fallback_result["ai_failed"] = True
+        fallback_result["error_message"] = "AI API 호출에 실패하여 키워드 기반 분석을 사용했습니다."
+        return fallback_result
     
     @staticmethod
     def generate_summary_with_ai(content: str) -> str:
@@ -313,6 +337,8 @@ class AIAnalysisService:
     @staticmethod
     def _extract_keywords_fallback(content: str) -> list:
         """키워드 추출 실패 시 감정 관련 키워드 추출"""
+        print(f"🔄 키워드 폴백 추출 시작: {content[:50]}...")
+        
         # 감정 관련 키워드 사전
         emotion_keywords = {
             '기쁨': ['기쁨', '행복', '즐거움', '신남', '좋음', '만족', '감사', '희망', '기대'],
@@ -335,18 +361,19 @@ class AIAnalysisService:
                     found_keywords.append(keyword)
                     break  # 각 감정당 하나씩만
         
-        # 추가로 일반적인 감정 표현 키워드
-        general_keywords = ['일', '하루', '생각', '느낌', '마음', '상태', '기분']
-        for keyword in general_keywords:
-            if keyword in content_lower and len(found_keywords) < 5:
-                found_keywords.append(keyword)
+        # 감정 분석 결과에서 primary_emotion을 키워드로 사용 (우선순위 높음)
+        emotion_analysis = AIAnalysisService.analyze_emotion_fallback(content)
+        primary_emotion = emotion_analysis["primary_emotion"]
+        
+        # primary_emotion이 이미 있으면 추가하지 않음
+        if primary_emotion not in found_keywords:
+            found_keywords.insert(0, primary_emotion)  # 맨 앞에 추가
         
         # 최소 1개는 반환
         if not found_keywords:
-            # 감정 분석 결과에서 primary_emotion을 키워드로 사용
-            emotion_analysis = AIAnalysisService.analyze_emotion_fallback(content)
-            found_keywords.append(emotion_analysis["primary_emotion"])
+            found_keywords.append(primary_emotion)
         
+        print(f"🎯 키워드 폴백 결과: {found_keywords}")
         return found_keywords[:5]
     
     @staticmethod

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from services.emotion_color_service import EmotionColorService
 from services.user_service import get_current_user
 from models.user import User
+import os
 
 router = APIRouter(prefix="/emotions", tags=["emotions"])
 
@@ -11,6 +12,16 @@ def get_emotion_colors(current_user: User = Depends(get_current_user)):
     return {
         "emotion_colors": EmotionColorService.get_emotion_colors(),
         "description": "로버트 플루치크의 감정의 바퀴를 기반으로 한 8가지 기본 감정 색상입니다."
+    }
+
+@router.get("/debug/ai-status")
+def check_ai_status(current_user: User = Depends(get_current_user)):
+    """AI API 상태 확인 (디버깅용)"""
+    api_key = os.getenv("OPENAI_API_KEY")
+    return {
+        "api_key_exists": bool(api_key),
+        "api_key_preview": api_key[:10] + "..." if api_key else None,
+        "message": "AI API 키가 설정되어 있습니다." if api_key else "AI API 키가 설정되지 않았습니다."
     }
 
 @router.get("/analyze")

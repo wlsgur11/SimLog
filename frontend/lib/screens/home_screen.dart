@@ -326,9 +326,35 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ? null
                     : () async {
                         // 동의 없이 바로 폼 열기
-                        final uri = Uri.parse(formUrl);
-                        if (await canLaunchUrl(uri)) {
-                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        try {
+                          final uri = Uri.parse(formUrl);
+                          if (await canLaunchUrl(uri)) {
+                            final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+                            if (!launched) {
+                              await launchUrl(uri, mode: LaunchMode.inAppWebView);
+                            }
+                          } else {
+                            // 링크를 열 수 없는 경우 클립보드에 복사
+                            await Clipboard.setData(ClipboardData(text: formUrl));
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('링크가 클립보드에 복사되었습니다. 브라우저에서 직접 열어주세요.'),
+                                  duration: Duration(seconds: 5),
+                                ),
+                              );
+                            }
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('링크를 열 수 없습니다: ${e.toString()}'),
+                                backgroundColor: Colors.red,
+                                duration: const Duration(seconds: 3),
+                              ),
+                            );
+                          }
                         }
                         // 7일 억제
                         try { await ApiService.ackAlert(accessToken: widget.accessToken); } catch (_) {}
@@ -342,25 +368,56 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     : () async {
                         setState(() => loading = true);
                         try {
+                          // 동의하고 요약 공유
                           await ApiService.setConsent(accessToken: widget.accessToken, consented: true);
                           final created = await ApiService.createWeeklyShare(accessToken: widget.accessToken);
                           final sharePath = created['share_path'] as String;
                           final shareUrl = '${ApiService.baseUrl}$sharePath';
+                          
+                          // 폼 열기
+                          try {
+                            final uri = Uri.parse(formUrl);
+                            if (await canLaunchUrl(uri)) {
+                              final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+                              if (!launched) {
+                                await launchUrl(uri, mode: LaunchMode.inAppWebView);
+                              }
+                            } else {
+                              await Clipboard.setData(ClipboardData(text: formUrl));
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('링크가 클립보드에 복사되었습니다. 브라우저에서 직접 열어주세요.'),
+                                    duration: Duration(seconds: 5),
+                                  ),
+                                );
+                              }
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('링크를 열 수 없습니다: ${e.toString()}'),
+                                  backgroundColor: Colors.red,
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            }
+                          }
+                          
                           // 7일 억제
                           try { await ApiService.ackAlert(accessToken: widget.accessToken); } catch (_) {}
-                          if (!mounted) return;
-                          Navigator.of(context).pop();
-                          _showShareResult(shareUrl);
+                          if (mounted) Navigator.of(context).pop();
                         } catch (e) {
-                          if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('링크 생성 실패: $e')),
-                          );
-                        } finally {
-                          if (mounted) setState(() => loading = false);
+                          setState(() => loading = false);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('요약 공유 실패: $e')),
+                            );
+                          }
                         }
                       },
-                child: loading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2,color: Colors.white)) : const Text('동의하고 링크 만들기'),
+                child: loading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator()) : const Text('동의하고 바로가기'),
               ),
             ],
           );
