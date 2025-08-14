@@ -23,12 +23,14 @@ class AIAnalysisService:
         """GPT-4o mini를 사용한 감정 분석"""
         try:
             api_key = os.getenv("OPENAI_API_KEY")
-            print(f"OpenAI API Key 확인: {api_key[:10] if api_key else 'None'}...")
+            print(f"🔍 OpenAI API Key 확인: {api_key[:10] if api_key else 'None'}...")
             if not api_key:
                 print("❌ OpenAI API 키가 설정되지 않았습니다.")
                 return None
             
+            print(f"🔍 OpenAI 클라이언트 생성 시도...")
             client = OpenAI(api_key=api_key)
+            print(f"✅ OpenAI 클라이언트 생성 성공")
             
             prompt = f"""
             다음 텍스트의 감정을 로버트 플루치크의 감정의 바퀴 8가지 중에서 분석해주세요:
@@ -47,24 +49,32 @@ class AIAnalysisService:
             """
             
             print(f"🤖 GPT-4o mini API 호출 시도...")
+            print(f"🔍 입력 텍스트: {content[:50]}...")
+            
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3
             )
             
+            print(f"✅ OpenAI API 응답 수신")
             content = response.choices[0].message.content
-            print(f"✅ OpenAI 응답: {content}")
+            print(f"🔍 OpenAI 응답 내용: {content}")
             
             try:
-                return json.loads(content)
+                result = json.loads(content)
+                print(f"✅ JSON 파싱 성공: {result}")
+                return result
             except json.JSONDecodeError as e:
                 print(f"❌ JSON 파싱 오류: {e}")
-                print(f"응답 내용: {content}")
+                print(f"🔍 파싱 실패한 응답 내용: {content}")
                 return None
             
         except Exception as e:
             print(f"❌ GPT-4o mini 감정 분석 오류: {str(e)}")
+            print(f"🔍 오류 타입: {type(e).__name__}")
+            import traceback
+            print(f"🔍 상세 오류: {traceback.format_exc()}")
             return None
     
     @staticmethod
