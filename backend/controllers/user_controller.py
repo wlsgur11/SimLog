@@ -13,6 +13,7 @@ def read_my_info(current_user: User = Depends(get_current_user)):
         "nickname": current_user.nickname,
         "email": current_user.email,
         "social_type": current_user.social_type,
+        "is_developer": current_user.is_developer,  # 개발자 여부 추가
         "created_at": current_user.created_at,
     }
 
@@ -29,6 +30,7 @@ def update_my_info(
         "nickname": user.nickname,
         "email": user.email,
         "social_type": user.social_type,
+        "is_developer": user.is_developer,  # 개발자 여부 추가
         "created_at": user.created_at,
     }
 
