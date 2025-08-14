@@ -205,20 +205,44 @@ SimLog는 AI 기반 감정 분석과 마음 건강 관리를 위한 모바일 �
 
 ## 📊 데이터 구조
 
-### 주요 모델
+### 🗄️ 주요 테이블
 
-- **User**: 사용자 정보 및 권한
-- **Record**: 일기 및 감정 분석 결과
-- **Alert**: 알림 설정 및 상태
-- **Share**: 공유 링크 및 만료 정보
+| 테이블 | 주요 필드 | 설명 |
+|--------|-----------|------|
+| **users** | `id`, `email`, `nickname`, `seeds`, `is_developer` | 사용자 정보, 씨앗(화폐), 개발자 권한 |
+| **records** | `content`, `emotion_analysis`, `ai_keywords`, `ai_summary` | 일기 내용, AI 감정 분석 결과 |
+| **garden_items** | `item_type`, `item_name`, `position_x/y`, `is_equipped` | 정원 아이템, 위치, 배치 상태 |
+| **garden_item_templates** | `item_name`, `price`, `rarity`, `is_available` | 상점 아이템 템플릿 |
+| **shared_reports** | `token_digest`, `snapshot`, `expires_at` | 7일 요약 공유 링크 |
+| **weekly_summary_cache** | `period_days`, `items`, `negative_ratio` | 주간/월간 요약 캐시 |
+| **user_alert_state** | `last_mind_check_at` | 알림 상태 관리 |
+| **user_consents** | `consented`, `consented_at` | 상담사 공유 동의 |
 
-### 감정 분석 결과
+### 🎨 감정 분석 데이터
 
-- **Primary Emotion**: 주요 감정 (기쁨, 슬픔, 분노 등)
-- **Intensity**: 감정 강도 (1-9)
-- **Confidence**: AI 분석 신뢰도
-- **Color Mapping**: 감정별 색상 정보
-- **Keywords**: 추출된 핵심 키워드
+```json
+{
+  "primary_emotion": "슬픔",
+  "intensity": 8,
+  "confidence": 0.95,
+  "color": {
+    "name": "어두운 파랑",
+    "hex": "#000046",
+    "intensity": 8
+  },
+  "ai_used": true
+}
+```
+
+### 🔗 관계도
+
+```
+User (1) ── (N) Record
+User (1) ── (N) GardenItem  
+User (1) ── (N) SharedReport
+User (1) ── (1) UserAlertState
+User (1) ── (1) UserConsent
+```
 
 ---
 
