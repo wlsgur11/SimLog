@@ -29,8 +29,17 @@ class AIAnalysisService:
                 return None
             
             print(f"🔍 OpenAI 클라이언트 생성 시도...")
-            client = OpenAI(api_key=api_key)
-            print(f"✅ OpenAI 클라이언트 생성 성공")
+            # 최신 openai 패키지와 호환되도록 수정
+            try:
+                client = OpenAI(api_key=api_key)
+                print(f"✅ OpenAI 클라이언트 생성 성공")
+            except TypeError as e:
+                if "proxies" in str(e):
+                    # proxies 인자 문제가 있는 경우 기본 설정으로 생성
+                    print(f"⚠️ proxies 인자 문제 감지, 기본 설정으로 클라이언트 생성")
+                    client = OpenAI(api_key=api_key, base_url="https://api.openai.com/v1")
+                else:
+                    raise e
             
             prompt = f"""
             다음 텍스트의 감정을 로버트 플루치크의 감정의 바퀴 8가지 중에서 분석해주세요:
@@ -85,7 +94,15 @@ class AIAnalysisService:
             if not api_key:
                 return None
             
-            client = OpenAI(api_key=api_key)
+            # 최신 openai 패키지와 호환되도록 수정
+            try:
+                client = OpenAI(api_key=api_key)
+            except TypeError as e:
+                if "proxies" in str(e):
+                    # proxies 인자 문제가 있는 경우 기본 설정으로 생성
+                    client = OpenAI(api_key=api_key, base_url="https://api.openai.com/v1")
+                else:
+                    raise e
             
             prompt = f"""
             다음 감정 기록을 한 줄로 요약해주세요. 
