@@ -382,17 +382,13 @@ flutter pub get
 ---
 
 ## 📞 문의
-- [개발자 이메일](octopus121@pusan.ac.kr)
-
----
-
-## 👨‍💻 개발자
 
 <div>
 
 | [문진혁](https://github.com/wlsgur11) |
 | :------------------------------------: |
 | <img src="https://github.com/wlsgur11.png" width="100"> |
+| [octopus121@pusan.ac.kr](mailto:octopus121@pusan.ac.kr) |
 
 </div>
 
