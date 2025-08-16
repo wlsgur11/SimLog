@@ -91,6 +91,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<void> _loadUserInfo() async {
     try {
       final userInfo = await ApiService.getMyInfo(widget.accessToken);
+      
       if (mounted) {
         setState(() {
           _isDeveloper = userInfo['is_developer'] ?? false;
@@ -224,7 +225,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           context,
                           Icons.edit_note,
                           '일기 작성',
-                          '오늘의 감정을 기록해보세요',
+                          '',
                           const Color(0xFF4CAF50),
                           iconSize,
                           cardPadding,
@@ -245,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           context,
                           Icons.analytics,
                           '감정 분석',
-                          '나의 감정 변화를 확인해보세요',
+                          '',
                           const Color(0xFF2196F3),
                           iconSize,
                           cardPadding,
@@ -257,7 +258,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           context,
                           Icons.eco,
                           '마음 정원',
-                          '감정에 따라 자라는 정원을 보세요',
+                          '',
                           const Color(0xFFFF9800),
                           iconSize,
                           cardPadding,
@@ -269,7 +270,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           context,
                           Icons.person,
                           '내 정보',
-                          '내 정보와 설정을 확인해보세요',
+                          '',
                           const Color(0xFF9C27B0),
                           iconSize,
                           cardPadding,

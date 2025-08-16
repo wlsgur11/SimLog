@@ -12,6 +12,18 @@ SimLog는 AI 기반 감정 분석과 마음 건강 관리를 위한 모바일 �
 
 ---
 
+## 🎥 시연 영상
+
+<div align="center">
+
+[![SimLog 시연 영상](https://img.youtube.com/vi/6Zve5oCCCCk/maxresdefault.jpg)](https://youtube.com/shorts/6Zve5oCCCCk?feature=share)
+
+**SimLog 어플 시연 영상** - [YouTube Shorts로 보기](https://youtube.com/shorts/6Zve5oCCCCk?feature=share)
+
+</div>
+
+---
+
  
 
 ## 🧭 시스템 아키텍처
