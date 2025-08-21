@@ -124,7 +124,7 @@ SimLog는 이러한 문제들을 해결하기 위해 AI 기술을 활용한 비�
 
 <div align="center">
 
-<img src="docs/pic/simlog_architecture.png" alt="SimLog Architecture" width="85%" />
+<img src="docs/시스템 아키텍쳐.png" alt="SimLog Architecture" width="85%" />
 
 </div>
 
