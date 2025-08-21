@@ -212,6 +212,15 @@ SimLog는 이러한 문제들을 해결하기 위해 AI 기술을 활용한 비�
 - 분석 중에는 로딩 화면이 표시됩니다.
 - 분석 완료 후 감정 색상, 키워드, 요약이 표시됩니다.
 
+#### 감정 분석 페이지:
+- AI가 분석한 감정 결과를 시각적으로 표시합니다.
+- 감정을 색상으로 직관적 표현 (예: 퍼플, 어두운 파랑, 어두운 회색 등)
+- 감정 강도 및 신뢰도 점수 제공
+- AI 추출 키워드 및 감정 요약 표시
+- 7일간의 감정 변화 추이 그래프 제공
+- 감정 분포 파이 차트 및 월간 통계 분석
+- 기간별, 감정별 필터링 기능
+
 #### 마음 정원 페이지:
 - 출석 체크를 통해 씨앗(화폐)을 획득할 수 있습니다.
 - 상점에서 다양한 아이템을 구매할 수 있습니다.
@@ -285,13 +294,13 @@ SimLog/
 #### 1. 백엔드 설치
 ```bash
 # 프로젝트 클론
-git clone [repository-url]
+git clone https://github.com/wlsgur11/SimLog
 cd SimLog/backend
 
 # 가상환경 생성 및 활성화
 python -m venv venv
 # Windows
-venv\Scripts\activate
+venv\Scripts\activate.bat
 # macOS/Linux
 source venv/bin/activate
 
