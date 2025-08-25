@@ -1,5 +1,11 @@
 # SimLog (심로그)
 
+<div align="center">
+
+<img src="docs/썸네일.png" alt="썸네일" width="70%" />
+
+</div>
+
 **AI가 읽는 마음, 함께 자라는 정원**
 
 **심리 감정 기록 및 AI 분석 플랫폼**
