@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<img src="docs/썸네일.png" alt="썸네일" width="70%" />
+<img src="docs/썸네일.png" alt="썸네일" width="85%" />
 
 </div>
 
