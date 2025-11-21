@@ -1,16 +1,14 @@
-# SimLog (심로그)
-
+# SimLog (심로그) 🌸
 <div align="center">
-
-<img src="docs/썸네일.png" alt="썸네일" width="85%" />
-
-</div>
+<img src="썸네일.png" alt="썸네일" width="85%" />
 
 **AI가 읽는 마음, 함께 자라는 정원**
 
 **심리 감정 기록 및 AI 분석 플랫폼**
 
 감정 표현이 서툰 청년층을 위한 비대면·비실명 감정 기록 및 AI 기반 피드백 시스템
+</div>
+
 
 ---
 
@@ -300,7 +298,7 @@ SimLog/
 #### 1. 백엔드 설치
 ```bash
 # 프로젝트 클론
-git clone https://github.com/wlsgur11/SimLog
+git clone https://github.com/2025-PNU-SW-Hackathon/PNUSW-2025-SimLog-07.git
 cd SimLog/backend
 
 # 가상환경 생성 및 활성화
@@ -347,13 +345,11 @@ flutter pub get
 
 <div align="center">
 
-[![SimLog 시연 영상](https://img.youtube.com/vi/6Zve5oCCCCk/maxresdefault.jpg)](https://youtube.com/shorts/6Zve5oCCCCk?feature=share)
-
-**SimLog 어플 시연 영상** - [YouTube Shorts로 보기](https://youtube.com/shorts/6Zve5oCCCCk?feature=share)
+[![SimLog 시연 영상](https://img.youtube.com/vi/6Zve5oCCCCk/maxresdefault.jpg)](https://youtu.be/2i2YJWFWQY4?si=Ct0KM2s2Bl_sqM0n)
 
 </div>
 
-**프로젝트 소개 동영상**: 교육원 메일(swedu@pusan.ac.kr)로 제출 후 센터에서 부여받은 YouTube URL 주소를 여기에 추가 예정
+**프로젝트 소개 동영상**: https://youtu.be/2i2YJWFWQY4
 
 ### 5.2. 앱 스크린샷
 
@@ -423,7 +419,7 @@ flutter pub get
 |------|------|-----------|--------|
 | **안나연** | 팀장, 기획 | 서비스 흐름 설계 | [annaaa4701@gmail.com](mailto:annaaa4701@gmail.com) |
 | **김율겸** | 기획 | 시장 리서치, 프로젝트 방향성 설정 | [myblog0113@naver.com](mailto:myblog0113@naver.com) |
-| **문진혁**  | 전체 앱 개발 | Backend, Frontend, 디자인 | [octopus121@pusan.ac.kr](mailto:octopus121@pusan.ac.kr) |
+| **문진혁**  | 앱 개발 | Backend, Frontend, 디자인 | [octopus121@pusan.ac.kr](mailto:octopus121@pusan.ac.kr) |
 | **황연경** | 초기 자료 조사 | 초기 아이디어 선정에 필요한 자료 조사 | [awkward8787@pusan.ac.kr](mailto:awkward8787@pusan.ac.kr) |
 
 ### 팀 소개
@@ -482,10 +478,6 @@ AI로 사람의 감정을 분석한다는 것이 처음엔 막막하기도 했�
 
 ---
 
-*SimLog는 AI가 몰랐던 내 마음을 읽어주는 혁신적인 모바일 애플리케이션입니다. 부산대학교 학생의 마음 건강을 지켜주는 혁신적 솔루션으로, 현재는 부산대학교를 시작으로, 향후 다양한 기관과의 연계를 통해 더 많은 사람들에게 마음 건강 관리 서비스를 제공할 예정입니다.*
-
----
-
 ## 9. 출처
 
 ### 뉴스 및 언론 자료
@@ -508,3 +500,7 @@ AI로 사람의 감정을 분석한다는 것이 처음엔 막막하기도 했�
 
 ### 심리학 자료
 - https://www.psychologytoday.com/us/blog/commit/202411/the-emotion-wheel
+
+---
+
+*SimLog는 AI가 몰랐던 내 마음을 읽어주는 혁신적인 모바일 애플리케이션입니다. 부산대학교 학생의 마음 건강을 지켜주는 혁신적 솔루션으로, 현재는 부산대학교를 시작으로, 향후 다양한 기관과의 연계를 통해 더 많은 사람들에게 마음 건강 관리 서비스를 제공할 예정입니다.*
