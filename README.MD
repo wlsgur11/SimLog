@@ -1,6 +1,6 @@
 # SimLog (심로그) 🌸
 <div align="center">
-<img src="썸네일.png" alt="썸네일" width="85%" />
+<img src="docs/썸네일.png" alt="썸네일" width="85%" />
 
 **AI가 읽는 마음, 함께 자라는 정원**
 
